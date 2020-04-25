@@ -12,5 +12,6 @@ setup(
     license='Pending',
     author='Andy Fundinger',
     author_email='Andy@ciemaar.com',
-    description='A simple attempt to delegate work from one machine to another, mostly Povray renders from a netbook to a desktop.'
+    description='A simple attempt to delegate work from one machine to another, mostly Povray renders from a netbook to a desktop.',
+    requires=['sip', 'PyQt4']
 )
