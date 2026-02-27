@@ -38,7 +38,9 @@ class TabDialog(QtWidgets.QDialog):
         tabWidget.addTab(PermissionsTab(fileInfo), "Permissions")
         tabWidget.addTab(ApplicationsTab(fileInfo), "Applications")
 
-        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttonBox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
@@ -155,11 +157,11 @@ class ApplicationsTab(QtWidgets.QWidget):
         alwaysCheckBox = QtWidgets.QCheckBox()
 
         if fileInfo.suffix():
-            alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
-                                             "open files with the extension '%s'" % fileInfo.suffix())
+            alwaysCheckBox = QtWidgets.QCheckBox(
+                "Always use this application to open files with the extension '%s'" % fileInfo.suffix()
+            )
         else:
-            alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
-                                             "open this type of file")
+            alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to open this type of file")
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(topLabel)
