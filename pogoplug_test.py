@@ -23,7 +23,7 @@ class FileTest(unittest.TestCase):
     def test_retrieve_file(self):
         drives = self.c.drives
         assert len(drives[0].files)
-        for file_obj in drives[0].files.values():
+        for file_obj in drives[0].files:
             assert isinstance(file_obj, BaseFile)
 
 

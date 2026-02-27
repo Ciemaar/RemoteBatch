@@ -41,7 +41,7 @@ def test_job_lifecycle(local_queue):
                 found_job = j
                 break
 
-        assert found_job is not None
+        assert found_job is not None, f"Jobs found: {[j.id for j in jobs]}"
         assert found_job.type == "test"
 
         # Retrieve files

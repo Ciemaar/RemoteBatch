@@ -135,7 +135,8 @@ class ManagerMain(QtWidgets.QMainWindow):
         self.jobListBox.clear()
         self.jobs = {}
         for job in self.queue.allJobs():
-            item = QtWidgets.QListWidgetItem("%s:%d %s" % (job.type, job.size, job.storage) + ": " + str(job), self.jobListBox)
+            item_text = f"{job.type}:{job.size} {job.storage}: {str(job)}"
+            item = QtWidgets.QListWidgetItem(item_text, self.jobListBox)
             self.jobs[item] = job
         self.refilter()
         if self.queue.isConnected:
@@ -199,7 +200,9 @@ class AddJobDialog(QtWidgets.QDialog):
         # tabWidget.addTab(PermissionsTab(fileInfo), "Permissions")
         tabWidget.addTab(DetailsTab(self.job), "Details")
 
-        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
+        buttonBox = QtWidgets.QDialogButtonBox(
+            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
+        )
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
