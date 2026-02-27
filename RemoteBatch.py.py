@@ -28,7 +28,7 @@ from PyQt4 import QtCore, QtGui
 
 class TabDialog(QtGui.QDialog):
     def __init__(self, fileName, parent=None):
-        super(TabDialog, self).__init__(parent)
+        super().__init__(parent)
 
         fileInfo = QtCore.QFileInfo(fileName)
 
@@ -52,7 +52,7 @@ class TabDialog(QtGui.QDialog):
 
 class GeneralTab(QtGui.QWidget):
     def __init__(self, fileInfo, parent=None):
-        super(GeneralTab, self).__init__(parent)
+        super().__init__(parent)
 
         fileNameLabel = QtGui.QLabel("File Name:")
         fileNameEdit = QtGui.QLineEdit(fileInfo.fileName())
@@ -91,7 +91,7 @@ class GeneralTab(QtGui.QWidget):
 
 class PermissionsTab(QtGui.QWidget):
     def __init__(self, fileInfo, parent=None):
-        super(PermissionsTab, self).__init__(parent)
+        super().__init__(parent)
 
         permissionsGroup = QtGui.QGroupBox("Permissions")
 
@@ -139,7 +139,7 @@ class PermissionsTab(QtGui.QWidget):
 
 class ApplicationsTab(QtGui.QWidget):
     def __init__(self, fileInfo, parent=None):
-        super(ApplicationsTab, self).__init__(parent)
+        super().__init__(parent)
 
         topLabel = QtGui.QLabel("Open with:")
 
@@ -154,11 +154,11 @@ class ApplicationsTab(QtGui.QWidget):
         alwaysCheckBox = QtGui.QCheckBox()
 
         if fileInfo.suffix():
-            alwaysCheckBox = QtGui.QCheckBox("Always use this application to "
-                                             "open files with the extension '%s'" % fileInfo.suffix())
+            alwaysCheckBox = QtGui.QCheckBox(
+                "Always use this application to open files with the extension '%s'" % fileInfo.suffix()
+            )
         else:
-            alwaysCheckBox = QtGui.QCheckBox("Always use this application to "
-                                             "open this type of file")
+            alwaysCheckBox = QtGui.QCheckBox("Always use this application to open this type of file")
 
         layout = QtGui.QVBoxLayout()
         layout.addWidget(topLabel)
@@ -167,8 +167,7 @@ class ApplicationsTab(QtGui.QWidget):
         self.setLayout(layout)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     import sys
 
     app = QtGui.QApplication(sys.argv)

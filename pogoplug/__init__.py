@@ -1,51 +1,78 @@
-import restclient
-
-try:
-    import json
-except ImportError:
-    import anyjson as json
 import functools
+import json
+import os
+from configparser import ConfigParser
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
+
+import requests
 
 
-class PogoplugError(IOError): pass
+class PogoplugError(IOError):
+    pass
 
 
-class Connection(object):
+class Connection:
     base_url = "http://service.pogoplug.com/svc/api/json/"
 
-    def __init__(self, email_or_valtoken, password=None):
-        self.valtoken = None
-        self._drives = None
+    def __init__(self, email_or_valtoken: str, password: str | None = None):
+        self.valtoken: str | None = None
+        self._drives: list[Directory] | None = None
         if password:
-            self.valtoken = self.invoke("loginUser", {"email": email_or_valtoken, "password": password})['valtoken']
+            result = self.invoke("loginUser", {"email": email_or_valtoken, "password": password})
+            if isinstance(result, dict):
+                self.valtoken = result.get("valtoken")
         else:
             self.valtoken = email_or_valtoken
         self.user = self.getUser()
 
-    def __getattr__(self, attname):
+    def __getattr__(self, attname: str) -> Any:
+        # Avoid recursion for methods/attributes that exist or are dunder methods
+        if attname.startswith("__"):
+            raise AttributeError(attname)
+
         if attname in self.__class__.__dict__:
             return self.__class__.__dict__[attname]
         return functools.partial(self.invoke, attname)
 
-    def invoke(self, fn, params=None):
+    def invoke(self, fn: str, params: dict[str, Any] | None = None) -> Any:
         if not params:
             params = {}
         if self.valtoken:
             params["valtoken"] = self.valtoken
-        response = restclient.rest_invoke(self.base_url + fn, params=params)
-        response = response.replace("\'",
-                                    '"')  # anyjson can't handle this probably should get a different json library
-        if isinstance(response, str):
-            response = json.loads(response)
-            if 'HB-EXCEPTION' in response:
-                raise PogoplugError((response['HB-EXCEPTION']['ecode'], response['HB-EXCEPTION']['message']))
-            return response
+
+        # Replacement for restclient.rest_invoke
+        try:
+            # Pogoplug API likely used GET or POST.
+            # Assuming GET for simplicity or trying to match legacy behavior
+            resp = requests.get(self.base_url + fn, params=params)
+            resp.raise_for_status()
+            response_text = resp.text
+        except requests.RequestException as e:
+            raise PogoplugError(f"Network error: {e}")
+
+        # The original code handled single quotes in JSON manually?
+        response_text = response_text.replace("'", '"')
+
+        try:
+            response = json.loads(response_text)
+        except json.JSONDecodeError:
+            return response_text  # return raw string if not json?
+
+        if isinstance(response, dict) and "HB-EXCEPTION" in response:
+            raise PogoplugError((response["HB-EXCEPTION"]["ecode"], response["HB-EXCEPTION"]["message"]))
+        return response
 
     @property
-    def drives(self):
+    def drives(self) -> list["Directory"]:
         if not self._drives:
-            self._drives = [Directory(self, service['deviceid'], service['serviceid'], service) for service in
-                            self.listServices()['services']]
+            services_resp = self.listServices()
+            if isinstance(services_resp, dict) and "services" in services_resp:
+                self._drives = [
+                    Directory(self, service["deviceid"], service["serviceid"], service)
+                    for service in services_resp["services"]
+                ]
+            else:
+                self._drives = []
         return self._drives
         # @drives.setter
         # def setdrives(self,value):
@@ -53,27 +80,36 @@ class Connection(object):
 
 
 class PogoObject(dict):
-    def __init__(self, connection, json_dict):
-        super(PogoObject, self).__init__(json_dict)
+    def __init__(self, connection: Connection, json_dict: dict[str, Any]):
+        super().__init__(json_dict)
         self.connection = connection
         self.flush()
 
-    def __getattr__(self, attname):
+    def __getattr__(self, attname: str) -> Any:
+        if attname.startswith("__"):
+            raise AttributeError(attname)
         return functools.partial(self.invoke, attname)
 
-    def flush(self):
+    def invoke(self, fn: str, params: dict[str, Any] | None = None) -> Any:
+        # Base implementation just calls connection invoke?
+        # But BaseFile overrides this. PogoObject seems to be a mixin for dict + invoke delegation
+        # but without contextual params in base.
+        # Assuming it delegates directly to connection if not overridden.
+        return self.connection.invoke(fn, params)
+
+    def flush(self) -> None:
         pass
 
 
 class BaseFile(PogoObject):
-    def __init__(self, connection, deviceid, serviceid, json_dict):
-        super(BaseFile, self).__init__(connection, json_dict)
+    def __init__(self, connection: Connection, deviceid: str, serviceid: str, json_dict: dict[str, Any]):
+        super().__init__(connection, json_dict)
         self.deviceid = deviceid
         self.serviceid = serviceid
-        self.fileid = self['fileid']
+        self.fileid = self.get("fileid")
         self.flush()
 
-    def invoke(self, fn, params=None):
+    def invoke(self, fn: str, params: dict[str, Any] | None = None) -> Any:
         if not params:
             params = {}
         params["deviceid"] = self.deviceid
@@ -84,52 +120,59 @@ class BaseFile(PogoObject):
 
 
 class File(BaseFile):
-    def update(self, fd_or_filename):
+    def update(self, fd_or_filename: Any) -> None:
         pass
 
 
 class Directory(BaseFile):
-    def __init__(self, connection, deviceid, serviceid, json_dict):
-        json_dict.setdefault('fileid', None)
-        super(Directory, self).__init__(connection, deviceid, serviceid, json_dict)
+    def __init__(self, connection: Connection, deviceid: str, serviceid: str, json_dict: dict[str, Any]):
+        json_dict.setdefault("fileid", None)
+        super().__init__(connection, deviceid, serviceid, json_dict)
+        self._files: dict[str, BaseFile] | None = None
 
-    def new_file(self):
+    def new_file(self) -> None:
         pass
 
     @property
-    def files(self):
+    def files(self) -> dict[str, BaseFile]:
         if not self._files:
             self._files = {}
-            for file_json in self.listFiles({'parentid': self.fileid} if self.fileid else {})['files']:
-                if file_json['type'] in FileTypes:
-                    klass = FileTypes[file_json['type']]
-                    file = klass(self.connection, self.deviceid, self.serviceid, file_json)
-                    self._files[file_json['filename']] = file
+            # listFiles might fail or return structure that needs checking
+            list_resp = self.listFiles({"parentid": self.fileid} if self.fileid else {})
+            if isinstance(list_resp, dict) and "files" in list_resp:
+                for file_json in list_resp["files"]:
+                    # FileTypes keys are strings '0', '1'
+                    ftype = str(file_json.get("type"))
+                    if ftype in FileTypes:
+                        klass = FileTypes[ftype]
+                        file_obj = klass(self.connection, self.deviceid, self.serviceid, file_json)
+                        self._files[file_json["filename"]] = file_obj
         return self._files
 
-    def flush(self):
+    def flush(self) -> None:
         self._files = None
 
 
-FileTypes = {'0': File, '1': Directory}
+FileTypes: dict[str, type[BaseFile]] = {"0": File, "1": Directory}
 
 
-def main():
-    import os.path
+def main() -> None:
     from optparse import OptionParser
-    from ConfigParser import ConfigParser
 
     parser = OptionParser()
-    parser.add_option("--user", dest="user",
-                      help="logon as USER", metavar="USER")
-    parser.add_option("-p", "--password", dest="password",
-                      help="use password PASSWORD", metavar="PASSWORD")
-    parser.add_option("-i", "--info",
-                      action="store_true", dest="print_info", default=False,
-                      help="print connection information, particularly the valtoken")
-    parser.add_option("-u", "--update",
-                      action="store_true", dest="update", default=False,
-                      help="update stored connection information")
+    parser.add_option("--user", dest="user", help="logon as USER", metavar="USER")
+    parser.add_option("-p", "--password", dest="password", help="use password PASSWORD", metavar="PASSWORD")
+    parser.add_option(
+        "-i",
+        "--info",
+        action="store_true",
+        dest="print_info",
+        default=False,
+        help="print connection information, particularly the valtoken",
+    )
+    parser.add_option(
+        "-u", "--update", action="store_true", dest="update", default=False, help="update stored connection information"
+    )
 
     (options, args) = parser.parse_args()
     config = ConfigParser()
@@ -140,19 +183,21 @@ def main():
     c = None
     if options.user and options.password:
         c = Connection(options.user, options.password)
-    elif config.has_option('auth', 'valtoken'):
-        c = Connection(config.get('valtoken', 'auth'))
+    elif config.has_option("auth", "valtoken"):
+        c = Connection(config.get("auth", "valtoken"))
 
     if not c or not c.user:
-        print "Unable to connect to pogoplug service."
+        print("Unable to connect to pogoplug service.")
         return
 
     if options.print_info:
-        print "Valtoken {0}".format(c.valtoken)
+        print(f"Valtoken {c.valtoken}")
 
     if options.update:
-        config.set('auth', 'valtoken', c.valtoken)
-        config.write(open(filename, "w"))
+        if c.valtoken:
+            config.set("auth", "valtoken", c.valtoken)
+        with open(filename, "w") as f:
+            config.write(f)
 
 
 if __name__ == "__main__":

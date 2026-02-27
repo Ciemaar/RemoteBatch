@@ -1,7 +1,7 @@
 import unittest
+from secrets import POGOPLUG_VALTOKEN
 
 from pogoplug import *
-from secrets import POGOPLUG_VALTOKEN
 
 
 class ConnectionTest(unittest.TestCase):

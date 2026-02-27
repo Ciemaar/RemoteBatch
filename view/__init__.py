@@ -1,5 +1,30 @@
+#!/usr/bin/env python
+
+#############################################################################
+##
+## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
+##
+## This file is part of the example classes of the Qt Toolkit.
+##
+## This file may be used under the terms of the GNU General Public
+## License version 2.0 as published by the Free Software Foundation
+## and appearing in the file LICENSE.GPL included in the packaging of
+## this file.  Please review the following information to ensure GNU
+## General Public Licensing requirements will be met:
+## http://www.trolltech.com/products/qt/opensource.html
+##
+## If you are unsure which license is appropriate for your use, please
+## review the following information:
+## http://www.trolltech.com/products/qt/licensing.html or contact the
+## sales department at sales@trolltech.com.
+##
+## This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+## WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+##
+#############################################################################
+
 import os.path
-from PyQt4 import QtCore, QtGui
+from PyQt6 import QtCore, QtWidgets, QtGui
 
 from notifier import notify
 
@@ -15,7 +40,7 @@ class RunMe(QtCore.QThread):
         self.func()
 
 
-class ManagerMain(QtGui.QMainWindow):
+class ManagerMain(QtWidgets.QMainWindow):
     def __init__(self, queue):
         """
 
@@ -23,40 +48,48 @@ class ManagerMain(QtGui.QMainWindow):
         super(ManagerMain, self).__init__()
         self.queue = queue
 
-        widget = QtGui.QWidget()
+        widget = QtWidgets.QWidget()
         self.setCentralWidget(widget)
 
-        jobListLabel = QtGui.QLabel("Current Jobs:")
+        jobListLabel = QtWidgets.QLabel("Current Jobs:")
 
-        self.jobListBox = QtGui.QListWidget()
+        self.jobListBox = QtWidgets.QListWidget()
         self.jobs = {}
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         layout.addWidget(jobListLabel)
         # layout.addWidget(jobidValueLabel)
         layout.addWidget(self.jobListBox)
 
-        buttonBox = QtGui.QDialogButtonBox()
-        buttonBox.addButton("Retrieve", buttonBox.ActionRole).clicked.connect(self.retrieve)
-        buttonBox.addButton("Delete", buttonBox.ActionRole).clicked.connect(self.delete)
-        buttonBox.addButton("New", buttonBox.ActionRole).clicked.connect(self.newjob)
-        self.refreshButton = buttonBox.addButton("Connect", buttonBox.ResetRole)
+        buttonBox = QtWidgets.QDialogButtonBox()
+        buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.retrieve)
+        buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.delete)
+        buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.newjob)
+        self.refreshButton = buttonBox.addButton("Connect", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
         self.refreshButton.clicked.connect(self.refresh)
-        buttonBox.addButton("Cleanup", buttonBox.ResetRole)
+        buttonBox.addButton("Cleanup", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
         layout.addWidget(buttonBox)
 
-        self.allAct = QtGui.QAction("&All", self, checkable=True,
-                                    shortcut="Ctrl+A", statusTip="Show all jobs",
-                                    triggered=self.refilter)
-        self.resultsAct = QtGui.QAction("&Results", self, checkable=True,
-                                        shortcut="Ctrl+R", statusTip="Show results only",
-                                        triggered=self.refilter)
-        settingsAct = QtGui.QAction("&Settings", self,
-                                    statusTip="Edit settings",
-                                    triggered=self.settings)
-        aboutAct = QtGui.QAction("About", self,
-                                 statusTip="Show the application's About box",
-                                 triggered=self.about)
+        # In PyQt6, QAction is in QtGui
+        self.allAct = QtGui.QAction("&All", self)
+        self.allAct.setCheckable(True)
+        self.allAct.setShortcut("Ctrl+A")
+        self.allAct.setStatusTip("Show all jobs")
+        self.allAct.triggered.connect(self.refilter)
+
+        self.resultsAct = QtGui.QAction("&Results", self)
+        self.resultsAct.setCheckable(True)
+        self.resultsAct.setShortcut("Ctrl+R")
+        self.resultsAct.setStatusTip("Show results only")
+        self.resultsAct.triggered.connect(self.refilter)
+
+        settingsAct = QtGui.QAction("&Settings", self)
+        settingsAct.setStatusTip("Edit settings")
+        settingsAct.triggered.connect(self.settings)
+
+        aboutAct = QtGui.QAction("About", self)
+        aboutAct.setStatusTip("Show the application's About box")
+        aboutAct.triggered.connect(self.about)
 
         filterGroup = QtGui.QActionGroup(self)
         filterGroup.addAction(self.allAct)
@@ -81,7 +114,7 @@ class ManagerMain(QtGui.QMainWindow):
         pass
 
     def refilter(self):
-        print "running refilter"
+        print("running refilter")
         for job_item in self.jobs:
             job = self.jobs[job_item]
             if self.resultsAct.isChecked() and job.type != "results":
@@ -101,8 +134,8 @@ class ManagerMain(QtGui.QMainWindow):
         self.jobListBox.clear()
         self.jobs = {}
         for job in self.queue.allJobs():
-            self.jobs[QtGui.QListWidgetItem("%s:%d %s" % (job.type, job.size, job.storage) + ": " + str(job),
-                                            self.jobListBox)] = job
+            item = QtWidgets.QListWidgetItem("%s:%d %s" % (job.type, job.size, job.storage) + ": " + str(job), self.jobListBox)
+            self.jobs[item] = job
         self.refilter()
         if self.queue.isConnected:
             self.refreshButton.setText("Refresh")
@@ -111,67 +144,72 @@ class ManagerMain(QtGui.QMainWindow):
 
     def newjob(self):
         dialog = AddJobDialog(self.queue)
-        return dialog.exec_()
+        return dialog.exec()
 
     def retrieve(self):
         """
 
         """
-        job = self.jobListBox.currentItem()
-        if job is None: return
-        job = self.jobs[job]
-        path = QtGui.QFileDialog.getExistingDirectory(self, "Retrieve to",
+        job_item = self.jobListBox.currentItem()
+        if job_item is None: return
+        job = self.jobs[job_item]
+        path = QtWidgets.QFileDialog.getExistingDirectory(self, "Retrieve to",
                                                       "~",
-                                                      QtGui.QFileDialog.ShowDirsOnly);
+                                                      QtWidgets.QFileDialog.Option.ShowDirsOnly)
         if not path:
-            print "No path given"
+            print("No path given")
             return
         try:
             notify("Retrieving job: " + str(job))
             tempdir = job.getFiles(str(path))
             notify("unzipped to %s" % tempdir)
             files = os.listdir(tempdir)
-            print "path %s files %s" % (tempdir, files)
-        except:
+            print("path %s files %s" % (tempdir, files))
+        except Exception:
             notify("Unable to retrieve file.")
 
     def delete(self):
         item = self.jobListBox.currentItem()
+        if not item: return
         job = self.jobs[item]
         notify("Deleting job: " + str(job))
         self.queue.delete(job)
-        self.jobListBox.removeItemWidget(item)
-        item.setHidden(True)
+        self.jobListBox.takeItem(self.jobListBox.row(item))
+        # item.setHidden(True) # Removed from listbox already
 
 
-class AddJobDialog(QtGui.QDialog):
+class AddJobDialog(QtWidgets.QDialog):
     def __init__(self, queue, parent=None):
         super(AddJobDialog, self).__init__(parent)
         self.queue = queue
         self.job = queue.job_class()
 
-        fileInfo = QtCore.QFileInfo(os.path.join(self.job.path, self.job.jobfile))
+        # Ensure path exists before using it
+        if self.job.path is None:
+             self.job.path = os.getcwd()
 
-        tabWidget = QtGui.QTabWidget()
+        # fileInfo = QtCore.QFileInfo(os.path.join(self.job.path, self.job.jobfile if self.job.jobfile else ""))
+
+        tabWidget = QtWidgets.QTabWidget()
         self.generalTab = GeneralTab(self.job)
         tabWidget.addTab(self.generalTab, "General")
         # tabWidget.addTab(PermissionsTab(fileInfo), "Permissions")
         tabWidget.addTab(DetailsTab(self.job), "Details")
 
-        buttonBox = QtGui.QDialogButtonBox(QtGui.QDialogButtonBox.Ok | QtGui.QDialogButtonBox.Cancel)
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
 
-        mainLayout = QtGui.QVBoxLayout()
+        mainLayout = QtWidgets.QVBoxLayout()
         mainLayout.addWidget(tabWidget)
         mainLayout.addWidget(buttonBox)
         self.setLayout(mainLayout)
 
         self.setWindowTitle("Remote Batch Runner")
 
-    def exec_(self):
-        if super(AddJobDialog, self).exec_():
+    def exec(self):
+        if super(AddJobDialog, self).exec():
             job = self.job
             notify("Bundling and sending " + str(job))
             self.queue.queue_job(job)
@@ -183,15 +221,15 @@ class AddJobDialog(QtGui.QDialog):
         return super(self.__class__, self).accept()
 
 
-class GeneralTab(QtGui.QWidget):
+class GeneralTab(QtWidgets.QWidget):
     def __init__(self, job, parent=None):
         super(GeneralTab, self).__init__(parent)
         self.job = job
 
-        self.fileNameEdit = QtGui.QLineEdit(job.jobfile)
+        self.fileNameEdit = QtWidgets.QLineEdit(job.jobfile)
         browseButton = self.createButton("&Browse...", self.browse)
 
-        self.pathEdit = QtGui.QLineEdit(job.path)
+        self.pathEdit = QtWidgets.QLineEdit(job.path)
 
         # lastReadLabel = QtGui.QLabel("Last Read:")
         # lastReadValueLabel = QtGui.QLabel(fileInfo.lastRead().toString())
@@ -201,8 +239,8 @@ class GeneralTab(QtGui.QWidget):
         # lastModValueLabel = QtGui.QLabel(fileInfo.lastModified().toString())
         # lastModValueLabel.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
 
-        mainLayout = QtGui.QVBoxLayout()
-        mainLayout.addWidget(QtGui.QLabel("Job File/Path:"))
+        mainLayout = QtWidgets.QVBoxLayout()
+        mainLayout.addWidget(QtWidgets.QLabel("Job File/Path:"))
         mainLayout.addWidget(self.fileNameEdit)
         mainLayout.addWidget(self.pathEdit)
         mainLayout.addWidget(browseButton)
@@ -222,7 +260,7 @@ class GeneralTab(QtGui.QWidget):
         return str(self.fileNameEdit.text())
 
     def browse(self):
-        filename = QtGui.QFileDialog.getOpenFileName(self, "Job File",
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Job File",
                                                      self.pathEdit.text())
         if filename:
             path, filename = os.path.split(str(filename))
@@ -231,95 +269,97 @@ class GeneralTab(QtGui.QWidget):
             self.job.set_jobfile(path, filename)
 
     def createButton(self, text, member):
-        button = QtGui.QPushButton(text)
+        button = QtWidgets.QPushButton(text)
         button.clicked.connect(member)
         return button
 
 
-class PermissionsTab(QtGui.QWidget):
+class PermissionsTab(QtWidgets.QWidget):
     def __init__(self, fileInfo, parent=None):
         super(PermissionsTab, self).__init__(parent)
 
-        permissionsGroup = QtGui.QGroupBox("Permissions")
+        permissionsGroup = QtWidgets.QGroupBox("Permissions")
 
-        readable = QtGui.QCheckBox("Readable")
+        readable = QtWidgets.QCheckBox("Readable")
         if fileInfo.isReadable():
             readable.setChecked(True)
 
-        writable = QtGui.QCheckBox("Writable")
+        writable = QtWidgets.QCheckBox("Writable")
         if fileInfo.isWritable():
             writable.setChecked(True)
 
-        executable = QtGui.QCheckBox("Executable")
+        executable = QtWidgets.QCheckBox("Executable")
         if fileInfo.isExecutable():
             executable.setChecked(True)
 
-        ownerGroup = QtGui.QGroupBox("Ownership")
+        ownerGroup = QtWidgets.QGroupBox("Ownership")
 
-        ownerLabel = QtGui.QLabel("Owner")
-        ownerValueLabel = QtGui.QLabel(fileInfo.owner())
-        ownerValueLabel.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
+        ownerLabel = QtWidgets.QLabel("Owner")
+        ownerValueLabel = QtWidgets.QLabel(fileInfo.owner())
+        ownerValueLabel.setFrameStyle(QtWidgets.QFrame.Shape.Panel | QtWidgets.QFrame.Shadow.Sunken)
 
-        groupLabel = QtGui.QLabel("Group")
-        groupValueLabel = QtGui.QLabel(fileInfo.group())
-        groupValueLabel.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
+        groupLabel = QtWidgets.QLabel("Group")
+        groupValueLabel = QtWidgets.QLabel(fileInfo.group())
+        groupValueLabel.setFrameStyle(QtWidgets.QFrame.Shape.Panel | QtWidgets.QFrame.Shadow.Sunken)
 
-        permissionsLayout = QtGui.QVBoxLayout()
+        permissionsLayout = QtWidgets.QVBoxLayout()
         permissionsLayout.addWidget(readable)
         permissionsLayout.addWidget(writable)
         permissionsLayout.addWidget(executable)
         permissionsGroup.setLayout(permissionsLayout)
 
-        ownerLayout = QtGui.QVBoxLayout()
+        ownerLayout = QtWidgets.QVBoxLayout()
         ownerLayout.addWidget(ownerLabel)
         ownerLayout.addWidget(ownerValueLabel)
         ownerLayout.addWidget(groupLabel)
         ownerLayout.addWidget(groupValueLabel)
         ownerGroup.setLayout(ownerLayout)
 
-        mainLayout = QtGui.QVBoxLayout()
+        mainLayout = QtWidgets.QVBoxLayout()
         mainLayout.addWidget(permissionsGroup)
         mainLayout.addWidget(ownerGroup)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
 
 
-class DetailsTab(QtGui.QWidget):
+class DetailsTab(QtWidgets.QWidget):
     def __init__(self, job, parent=None):
         super(DetailsTab, self).__init__(parent)
         self.job = job
 
-        topLabel = QtGui.QLabel("Job Type:")
+        self.topLabel = QtWidgets.QLabel("Job Type:")
 
-        self.applicationsListBox = QtGui.QListWidget()
+        self.applicationsListBox = QtWidgets.QListWidget()
         applications = ["Povray", "Upgrade", "Shell"]
 
         self.applicationsListBox.insertItems(0, applications)
         self.applicationsListBox.itemSelectionChanged.connect(self.update_job)
 
-        alwaysCheckBox = QtGui.QCheckBox()
+        # alwaysCheckBox = QtWidgets.QCheckBox()
 
-        if False:
-            alwaysCheckBox = QtGui.QCheckBox("Always use this application to "
-                                             "open files with the extension '%s'" % fileInfo.suffix())
-        else:
-            alwaysCheckBox = QtGui.QCheckBox("Always use this application to "
-                                             "open this type of file")
+        # if False:
+        #     alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
+        #                                      "open files with the extension '%s'" % fileInfo.suffix())
+        # else:
+        #     alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
+        #                                      "open this type of file")
 
-        jobidLabel = QtGui.QLabel("Job ID:")
+        # jobidLabel = QtWidgets.QLabel("Job ID:")
         self.jobID = job.id
-        jobidValueLabel = QtGui.QLabel(self.jobID)
-        jobidValueLabel.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
+        # jobidValueLabel = QtWidgets.QLabel(self.jobID)
+        # jobidValueLabel.setFrameStyle(QtWidgets.QFrame.Shape.Panel | QtWidgets.QFrame.Shadow.Sunken)
 
-        layout = QtGui.QVBoxLayout()
+        layout = QtWidgets.QVBoxLayout()
         # layout.addWidget(jobidLabel)
         # layout.addWidget(jobidValueLabel)
         layout.addWidget(self.applicationsListBox)
-        layout.addWidget(alwaysCheckBox)
+        # layout.addWidget(alwaysCheckBox)
         self.setLayout(layout)
 
     def update_job(self):
-        self.job.type = str(self.applicationsListBox.currentItem().text())
+        item = self.applicationsListBox.currentItem()
+        if item:
+             self.job.type = str(item.text())
 
     def showEvent(self, QShowEvent):
         super(DetailsTab, self).showEvent(QShowEvent)

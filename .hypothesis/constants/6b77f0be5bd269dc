@@ -1,0 +1,4 @@
+# file: /app/secrets.py
+# hypothesis_version: 6.151.9
+
+['pogoplug-valtoken', 'remote-batch-bucket']

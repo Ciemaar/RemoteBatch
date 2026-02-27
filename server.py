@@ -7,9 +7,10 @@ import logging
 import os
 import subprocess
 from time import sleep
+import tarfile
 
-from boto.exception import S3ResponseError
-from  model import BatchQueue, Results
+# from boto.exception import S3ResponseError # boto3 doesn't use this
+from model import BatchQueue, Results
 
 log = logging.getLogger(name=__name__)
 
@@ -21,29 +22,29 @@ except OSError:
 
 def processJob(job):
     if job.type and job.type.lower() == "povray":
-        print "povjob %s" % job.jobfile
+        print("povjob %s" % job.jobfile)
         job.getFiles()
-        print "calling povray on %s/%s" % (job.path, job.jobfile)
+        print("calling povray on %s/%s" % (job.path, job.jobfile))
         os.mkdir(os.path.join(job.path, "output"))
         status = subprocess.call(("/usr/bin/povray",
                                   job.jobfile), cwd=job.path)
-        print "root files %s" % os.listdir(job.path)
+        print("root files %s" % os.listdir(job.path))
         files = os.listdir(os.path.join(job.path, "output"))
-        print "output files %s" % (files)
+        print("output files %s" % (files))
         result = Results("%s_%d" % (job.id, job.step + 1), os.path.join(job.path, "output"), status)
-        print "result: " + result.path
+        print("result: " + result.path)
         result.mkTar()
         return result
     elif job.type and job.type == "results":
-        print "results job %s" % job.id
+        print("results job %s" % job.id)
         return None
     else:
         log.error("Unknown job type %s", job.type)
 
         tempdir = job.getFiles()
-        print "unzipped to %s" % tempdir
+        print("unzipped to %s" % tempdir)
         files = os.listdir(tempdir)
-        print "path %s files %s" % (tempdir, files)
+        print("path %s files %s" % (tempdir, files))
         if not job.type:
             job.mark_complete()
         return None
@@ -54,9 +55,9 @@ result_queue = BatchQueue()
 while True:
     try:
         for job in batch_queue.jobs():
-            print "Found Job:  {job} type: {type}".format(job=job, type=job.type)
+            print("Found Job:  {job} type: {type}".format(job=job, type=job.type))
             if job.isComplete:
-                print "Already Complete"
+                print("Already Complete")
                 continue
             try:
                 result = processJob(job)
@@ -66,13 +67,13 @@ while True:
                 import traceback
 
                 traceback.print_exc()
-                print "System error on job {job}".format(job=job)
+                print("System error on job {job}".format(job=job))
             else:
                 job.mark_complete(result)
             finally:
                 job.cleanup()
-    except  S3ResponseError:
-        print "Error from S3, will retry in 5 mins"
+    except Exception:
+        print("Error from S3, will retry in 5 mins")
         sleep(180)
     sleep(120)
-    print "Checking jobs"
+    print("Checking jobs")

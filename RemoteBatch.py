@@ -23,22 +23,19 @@
 ##
 #############################################################################
 
-import sip
-
-sip.setapi('QVariant', 2)
-
-from PyQt4 import QtGui
-
 import os
 import os.path
+import sys
+
+from PyQt6 import QtWidgets
 
 from controller import job_dialog
 from model import BatchQueue, Results
 
 
-class RemoteBatchApp(QtGui.QApplication):
+class RemoteBatchApp(QtWidgets.QApplication):
     def __init__(self, argv, *args, **xargs):
-        super(RemoteBatchApp, self).__init__(argv, *args, **xargs)
+        super().__init__(argv, *args, **xargs)
         if len(argv) >= 2:
             self.path = argv[1]
         else:
@@ -49,17 +46,14 @@ class RemoteBatchApp(QtGui.QApplication):
             pass
 
     def start(self):
-        print "started"
+        print("started")
         job_dialog(self.path, BatchQueue())
 
 
-if __name__ == '__main__':
-    #
-    import sys
-
-    print "in main"
+if __name__ == "__main__":
+    print("in main")
     app = RemoteBatchApp(sys.argv)
-    print "created remote batch app"
+    print("created remote batch app")
     app.start()
     try:
         resultQueue = BatchQueue(job_class=Results)
