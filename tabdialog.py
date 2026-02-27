@@ -25,6 +25,7 @@
 
 from PyQt6 import QtCore, QtWidgets
 
+ARGS_MIN_LENGTH = 2
 
 class TabDialog(QtWidgets.QDialog):
     def __init__(self, fileName, parent=None):
@@ -37,9 +38,7 @@ class TabDialog(QtWidgets.QDialog):
         tabWidget.addTab(PermissionsTab(fileInfo), "Permissions")
         tabWidget.addTab(ApplicationsTab(fileInfo), "Applications")
 
-        buttonBox = QtWidgets.QDialogButtonBox(
-            QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
-        )
+        buttonBox = QtWidgets.QDialogButtonBox(QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel)
 
         buttonBox.accepted.connect(self.accept)
         buttonBox.rejected.connect(self.reject)
@@ -156,11 +155,11 @@ class ApplicationsTab(QtWidgets.QWidget):
         alwaysCheckBox = QtWidgets.QCheckBox()
 
         if fileInfo.suffix():
-            alwaysCheckBox = QtWidgets.QCheckBox(
-                "Always use this application to open files with the extension '%s'" % fileInfo.suffix()
-            )
+            alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
+                                             "open files with the extension '%s'" % fileInfo.suffix())
         else:
-            alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to open this type of file")
+            alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
+                                             "open this type of file")
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(topLabel)
@@ -169,15 +168,13 @@ class ApplicationsTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
+
     import sys
 
     app = QtWidgets.QApplication(sys.argv)
 
-    if len(sys.argv) >= 2:
-        fileName = sys.argv[1]
-    else:
-        fileName = "."
+    fileName = sys.argv[1] if len(sys.argv) >= ARGS_MIN_LENGTH else "."
 
     tabdialog = TabDialog(fileName)
     sys.exit(tabdialog.exec())

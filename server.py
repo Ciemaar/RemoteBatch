@@ -3,21 +3,19 @@
 # from gevent import monkey
 # monkey.patch_all()
 
+import contextlib
 import logging
 import os
 import subprocess
 from time import sleep
-import tarfile
 
 # from boto.exception import S3ResponseError # boto3 doesn't use this
 from model import BatchQueue, Results
 
 log = logging.getLogger(name=__name__)
 
-try:
+with contextlib.suppress(OSError):
     os.makedirs(os.path.expanduser("~/.remotebatch/outqueue"))
-except OSError:
-    pass
 
 
 def processJob(job):
@@ -36,15 +34,15 @@ def processJob(job):
         result.mkTar()
         return result
     elif job.type and job.type == "results":
-        print("results job %s" % job.id)
+        print(f"results job {job.id}")
         return None
     else:
         log.error("Unknown job type %s", job.type)
 
         tempdir = job.getFiles()
-        print("unzipped to %s" % tempdir)
+        print(f"unzipped to {tempdir}")
         files = os.listdir(tempdir)
-        print("path %s files %s" % (tempdir, files))
+        print(f"path {tempdir} files {files}")
         if not job.type:
             job.mark_complete()
         return None
@@ -55,7 +53,7 @@ result_queue = BatchQueue()
 while True:
     try:
         for job in batch_queue.jobs():
-            print("Found Job:  {job} type: {type}".format(job=job, type=job.type))
+            print(f"Found Job:  {job} type: {job.type}")
             if job.isComplete:
                 print("Already Complete")
                 continue
@@ -63,11 +61,11 @@ while True:
                 result = processJob(job)
                 if result:
                     result_queue.queue_job(result)
-            except:
+            except Exception:
                 import traceback
 
                 traceback.print_exc()
-                print("System error on job {job}".format(job=job))
+                print(f"System error on job {job}")
             else:
                 job.mark_complete(result)
             finally:

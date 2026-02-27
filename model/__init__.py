@@ -1,3 +1,4 @@
+import contextlib
 import io
 import logging
 import os
@@ -6,7 +7,7 @@ import tarfile
 import tempfile
 import uuid
 from collections.abc import Generator
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional
 
 # Try to import boto3, but allow it to fail if we are just testing local queue
 try:
@@ -14,7 +15,7 @@ try:
 except ImportError:
     boto3 = None
 
-from secrets import REMOTE_BATCH_BUCKET
+from app_secrets import REMOTE_BATCH_BUCKET
 
 log = logging.getLogger(__name__)
 
@@ -114,7 +115,24 @@ class Job:
         tmpTar.seek(0)
 
         try:
-            tar = tarfile.open(fileobj=tmpTar, mode="r:gz")
+            with tarfile.open(fileobj=tmpTar, mode="r:gz") as tar:
+                if not to:
+                    self.path = tempfile.mkdtemp()
+                else:
+                    self.path = to
+
+                tar.extractall(
+                    self.path,
+                    members=[member for member in tar.getmembers() if member.name.startswith(self._arcpath)],
+                    filter="data",
+                )
+
+                if self.jobfile:
+                    with contextlib.suppress(KeyError):
+                        tar.extract(self.jobfile, self.path, filter="data")
+
+                self.jobroot = os.path.join(self.path, self._arcpath)
+                return self.jobroot
         except tarfile.ReadError:
             if not to:
                 self.path = tempfile.mkdtemp()
@@ -122,25 +140,6 @@ class Job:
                 self.path = to
             self.jobroot = os.path.join(self.path, self._arcpath)
             return self.jobroot
-
-        self.path = to
-        if not to:
-            self.path = tempfile.mkdtemp()
-
-        tar.extractall(
-            self.path,
-            members=[member for member in tar.getmembers() if member.name.startswith(self._arcpath)],
-            filter="data",
-        )
-
-        if self.jobfile:
-            try:
-                tar.extract(self.jobfile, self.path, filter="data")
-            except KeyError:
-                pass
-
-        self.jobroot = os.path.join(self.path, self._arcpath)
-        return self.jobroot
 
     def mark_complete(self, next_job: Optional["Job"] = None) -> None:
         self.cleanup()
@@ -236,7 +235,7 @@ class ClientJob(Job):
 
 class Results:
     def __init__(
-        self, id: str | None = None, path: str | None = None, status: Any | None = None, s3key: Any | None = None
+        self, job_id: str | None = None, path: str | None = None, status: Any | None = None, s3key: Any | None = None
     ) -> None:
         """ """
         self.orig_path: str | None = None
@@ -253,7 +252,7 @@ class Results:
             self._key = s3key
         else:
             self.type = "results"
-            self.id = id
+            self.id = job_id
             self.path = path
             self.status = status
             self._arcpath = "output"
@@ -331,7 +330,7 @@ class BatchQueue:
                     full_obj = self.bucket.Object(obj.key)
                     try:
                         full_obj.load()
-                    except:
+                    except Exception:
                         continue
 
                     job = self.job_class(s3key=full_obj)
@@ -348,7 +347,7 @@ class BatchQueue:
             full_obj = self.bucket.Object(obj.key)
             try:
                 full_obj.load()
-            except:
+            except Exception:
                 continue
             jobs.append(self.job_class(s3key=full_obj))
         return jobs

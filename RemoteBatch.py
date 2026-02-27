@@ -23,6 +23,7 @@
 ##
 #############################################################################
 
+import contextlib
 import os
 import os.path
 import sys
@@ -32,25 +33,21 @@ from PyQt6 import QtWidgets
 from controller import job_dialog
 from model import BatchQueue, Results
 
+ARGS_MIN_LENGTH = 2
 
 class RemoteBatchApp(QtWidgets.QApplication):
     def __init__(self, argv, *args, **xargs):
         super().__init__(argv, *args, **xargs)
-        if len(argv) >= 2:
-            self.path = argv[1]
-        else:
-            self.path = "./"
-        try:
+        self.path = argv[1] if len(argv) >= ARGS_MIN_LENGTH else "./"
+        with contextlib.suppress(OSError):
             os.makedirs(os.path.expanduser("~/.remotebatch/outqueue"))
-        except OSError:
-            pass
 
     def start(self):
         print("started")
         job_dialog(self.path, BatchQueue())
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print("in main")
     app = RemoteBatchApp(sys.argv)
     print("created remote batch app")

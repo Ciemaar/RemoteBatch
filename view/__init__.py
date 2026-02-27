@@ -24,16 +24,17 @@
 #############################################################################
 
 import os.path
-from PyQt6 import QtCore, QtWidgets, QtGui
 
-from notifier import notify
+from PyQt6 import QtCore, QtGui, QtWidgets
+
+from view.notifier import notify
 
 threaded = True
 
 
 class RunMe(QtCore.QThread):
     def __init__(self, func):
-        super(RunMe, self).__init__()
+        super().__init__()
         self.func = func
 
     def run(self):
@@ -45,7 +46,7 @@ class ManagerMain(QtWidgets.QMainWindow):
         """
 
         """
-        super(ManagerMain, self).__init__()
+        super().__init__()
         self.queue = queue
 
         widget = QtWidgets.QWidget()
@@ -151,7 +152,8 @@ class ManagerMain(QtWidgets.QMainWindow):
 
         """
         job_item = self.jobListBox.currentItem()
-        if job_item is None: return
+        if job_item is None:
+            return
         job = self.jobs[job_item]
         path = QtWidgets.QFileDialog.getExistingDirectory(self, "Retrieve to",
                                                       "~",
@@ -170,7 +172,8 @@ class ManagerMain(QtWidgets.QMainWindow):
 
     def delete(self):
         item = self.jobListBox.currentItem()
-        if not item: return
+        if not item:
+            return
         job = self.jobs[item]
         notify("Deleting job: " + str(job))
         self.queue.delete(job)
@@ -180,7 +183,7 @@ class ManagerMain(QtWidgets.QMainWindow):
 
 class AddJobDialog(QtWidgets.QDialog):
     def __init__(self, queue, parent=None):
-        super(AddJobDialog, self).__init__(parent)
+        super().__init__(parent)
         self.queue = queue
         self.job = queue.job_class()
 
@@ -209,7 +212,7 @@ class AddJobDialog(QtWidgets.QDialog):
         self.setWindowTitle("Remote Batch Runner")
 
     def exec(self):
-        if super(AddJobDialog, self).exec():
+        if super().exec():
             job = self.job
             notify("Bundling and sending " + str(job))
             self.queue.queue_job(job)
@@ -223,7 +226,7 @@ class AddJobDialog(QtWidgets.QDialog):
 
 class GeneralTab(QtWidgets.QWidget):
     def __init__(self, job, parent=None):
-        super(GeneralTab, self).__init__(parent)
+        super().__init__(parent)
         self.job = job
 
         self.fileNameEdit = QtWidgets.QLineEdit(job.jobfile)
@@ -276,7 +279,7 @@ class GeneralTab(QtWidgets.QWidget):
 
 class PermissionsTab(QtWidgets.QWidget):
     def __init__(self, fileInfo, parent=None):
-        super(PermissionsTab, self).__init__(parent)
+        super().__init__(parent)
 
         permissionsGroup = QtWidgets.QGroupBox("Permissions")
 
@@ -324,7 +327,7 @@ class PermissionsTab(QtWidgets.QWidget):
 
 class DetailsTab(QtWidgets.QWidget):
     def __init__(self, job, parent=None):
-        super(DetailsTab, self).__init__(parent)
+        super().__init__(parent)
         self.job = job
 
         self.topLabel = QtWidgets.QLabel("Job Type:")
@@ -362,4 +365,4 @@ class DetailsTab(QtWidgets.QWidget):
              self.job.type = str(item.text())
 
     def showEvent(self, QShowEvent):
-        super(DetailsTab, self).showEvent(QShowEvent)
+        super().showEvent(QShowEvent)

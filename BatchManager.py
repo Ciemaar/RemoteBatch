@@ -1,3 +1,4 @@
+import contextlib
 import os
 import sys
 
@@ -11,16 +12,14 @@ class RemoteMgrApp(QtWidgets.QApplication):
     def __init__(self, argv, *args, **xargs):
         super().__init__(argv, *args, **xargs)
         self.local_path = os.path.expanduser("~/.remotebatch/outqueue")
-        try:
+        with contextlib.suppress(OSError):
             os.makedirs(self.local_path)
-        except OSError:
-            pass
 
     def start(self):
         """
         Start app including queue initialization.
         """
-        print("Connecting and loading queued jobs")
+        print('Connecting and loading queued jobs')
         # QNetworkConfigurationManager is deprecated/removed in Qt6.
         # Using a simpler check or skipping for now.
         # Assuming true for now as replacement logic is complex without specific requirements.
@@ -37,7 +36,7 @@ class RemoteMgrApp(QtWidgets.QApplication):
         self.queue.save()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     print("in main")
     app = RemoteMgrApp(sys.argv)
     print("created remote batch app")

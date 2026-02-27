@@ -1,0 +1,4 @@
+# file: /app/pogoplug/__init__.py
+# hypothesis_version: 6.151.9
+
+['"', "'", '--info', '--password', '--update', '--user', '-i', '-p', '-u', '.pogoplug', '0', '1', 'Directory', 'HB-EXCEPTION', 'PASSWORD', 'USER', '__', '__main__', 'auth', 'deviceid', 'ecode', 'email', 'fileid', 'filename', 'files', 'loginUser', 'logon as USER', 'message', 'parentid', 'password', 'print_info', 'serviceid', 'services', 'store_true', 'type', 'update', 'user', 'valtoken', 'w', '~']

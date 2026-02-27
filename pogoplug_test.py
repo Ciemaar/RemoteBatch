@@ -1,7 +1,7 @@
 import unittest
-from secrets import POGOPLUG_VALTOKEN
 
-from pogoplug import *
+from app_secrets import POGOPLUG_VALTOKEN
+from pogoplug import BaseFile, Connection, Directory
 
 
 class ConnectionTest(unittest.TestCase):
@@ -23,7 +23,7 @@ class FileTest(unittest.TestCase):
     def test_retrieve_file(self):
         drives = self.c.drives
         assert len(drives[0].files)
-        for file_obj in drives[0].files:
+        for file_obj in drives[0].files.values():
             assert isinstance(file_obj, BaseFile)
 
 
