@@ -1,0 +1,9 @@
+-r requirements.txt
+pytest>=8.0.0
+hypothesis>=6.98.0
+ruff>=0.3.0
+pyright>=1.1.350
+types-requests>=2.31.0
+types-boto3>=1.0.2
+mypy>=1.8.0
+mdformat>=0.7.17
