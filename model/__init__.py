@@ -1,3 +1,5 @@
+"""Model package containing core Queue and Job logic."""
+
 import contextlib
 import io
 import logging

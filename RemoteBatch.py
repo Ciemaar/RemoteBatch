@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""Main entry point for the Remote Batch client application."""
+
 #############################################################################
 ##
 ## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
@@ -35,19 +37,30 @@ from model import BatchQueue, Results
 
 ARGS_MIN_LENGTH = 2
 
+
 class RemoteBatchApp(QtWidgets.QApplication):
+    """The main client application for submitting jobs to RemoteBatch."""
+
     def __init__(self, argv, *args, **xargs):
+        """Initialize the RemoteBatchApp.
+
+        Args:
+            argv (list): Command-line arguments.
+            *args: Variable length argument list.
+            **xargs: Arbitrary keyword arguments.
+        """
         super().__init__(argv, *args, **xargs)
         self.path = argv[1] if len(argv) >= ARGS_MIN_LENGTH else "./"
         with contextlib.suppress(OSError):
             os.makedirs(os.path.expanduser("~/.remotebatch/outqueue"))
 
     def start(self):
+        """Start the client application and open the job submission dialog."""
         print("started")
         job_dialog(self.path, BatchQueue())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print("in main")
     app = RemoteBatchApp(sys.argv)
     print("created remote batch app")

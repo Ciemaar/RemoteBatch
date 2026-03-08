@@ -1,3 +1,5 @@
+"""Tests for the job model and local queue logic."""
+
 import os
 import shutil
 import tempfile
@@ -9,6 +11,11 @@ from model import Job, LocalKey, LocalQueue, Results
 
 @pytest.fixture
 def local_queue():
+    """Provide a temporary local queue instance for testing.
+
+    Yields:
+        LocalQueue: A filesystem-backed queue initialized in a temp directory.
+    """
     temp_dir = tempfile.mkdtemp()
     queue = LocalQueue(root_path=temp_dir)
     yield queue
@@ -16,6 +23,7 @@ def local_queue():
 
 
 def test_job_lifecycle(local_queue):
+    """Test the full lifecycle of a Job within a LocalQueue."""
     # Create a job content in a dedicated temporary directory
     with tempfile.TemporaryDirectory() as job_dir:
         job_file_path = os.path.join(job_dir, "test_job.txt")
@@ -66,6 +74,7 @@ def test_job_lifecycle(local_queue):
 
 
 def test_results_lifecycle(local_queue):
+    """Test the creation, storage, and retrieval of Results."""
     # Create results
     results = Results(job_id="res-1", status="success")
     results.type = "results"

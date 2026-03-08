@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+"""Module containing the TabDialog and its constituent tabs for Job details."""
+
 #############################################################################
 ##
 ## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
@@ -25,10 +27,17 @@
 
 from PyQt6 import QtCore, QtWidgets
 
-ARGS_MIN_LENGTH = 2
 
 class TabDialog(QtWidgets.QDialog):
+    """A dialog window featuring multiple tabs for file information."""
+
     def __init__(self, fileName, parent=None):
+        """Initialize the TabDialog.
+
+        Args:
+            fileName (str): The path to the file to display information for.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
 
         fileInfo = QtCore.QFileInfo(fileName)
@@ -54,7 +63,15 @@ class TabDialog(QtWidgets.QDialog):
 
 
 class GeneralTab(QtWidgets.QWidget):
+    """Tab displaying general file information."""
+
     def __init__(self, fileInfo, parent=None):
+        """Initialize the GeneralTab.
+
+        Args:
+            fileInfo (QFileInfo): Information about the file.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
 
         fileNameLabel = QtWidgets.QLabel("File Name:")
@@ -66,7 +83,7 @@ class GeneralTab(QtWidgets.QWidget):
 
         sizeLabel = QtWidgets.QLabel("Size:")
         size = fileInfo.size() // 1024
-        sizeValueLabel = QtWidgets.QLabel("%d K" % size)
+        sizeValueLabel = QtWidgets.QLabel(f"{size} K")
         sizeValueLabel.setFrameStyle(QtWidgets.QFrame.Shape.Panel | QtWidgets.QFrame.Shadow.Sunken)
 
         lastReadLabel = QtWidgets.QLabel("Last Read:")
@@ -93,7 +110,15 @@ class GeneralTab(QtWidgets.QWidget):
 
 
 class PermissionsTab(QtWidgets.QWidget):
+    """Tab displaying file permissions and ownership."""
+
     def __init__(self, fileInfo, parent=None):
+        """Initialize the PermissionsTab.
+
+        Args:
+            fileInfo (QFileInfo): Information about the file.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
 
         permissionsGroup = QtWidgets.QGroupBox("Permissions")
@@ -141,7 +166,15 @@ class PermissionsTab(QtWidgets.QWidget):
 
 
 class ApplicationsTab(QtWidgets.QWidget):
+    """Tab displaying application association options."""
+
     def __init__(self, fileInfo, parent=None):
+        """Initialize the ApplicationsTab.
+
+        Args:
+            fileInfo (QFileInfo): Information about the file.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
 
         topLabel = QtWidgets.QLabel("Open with:")
@@ -150,7 +183,7 @@ class ApplicationsTab(QtWidgets.QWidget):
         applications = []
 
         for i in range(1, 31):
-            applications.append("Application %d" % i)
+            applications.append(f"Application {i}")
 
         applicationsListBox.insertItems(0, applications)
 
@@ -158,7 +191,7 @@ class ApplicationsTab(QtWidgets.QWidget):
 
         if fileInfo.suffix():
             alwaysCheckBox = QtWidgets.QCheckBox(
-                "Always use this application to open files with the extension '%s'" % fileInfo.suffix()
+                f"Always use this application to open files with the extension '{fileInfo.suffix()}'"
             )
         else:
             alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to open this type of file")
@@ -170,13 +203,16 @@ class ApplicationsTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     import sys
+    ARGS_MIN_LENGTH = 2
 
     app = QtWidgets.QApplication(sys.argv)
 
-    fileName = sys.argv[1] if len(sys.argv) >= ARGS_MIN_LENGTH else "."
+    if len(sys.argv) >= ARGS_MIN_LENGTH:
+        fileName = sys.argv[1]
+    else:
+        fileName = "."
 
     tabdialog = TabDialog(fileName)
     sys.exit(tabdialog.exec())
