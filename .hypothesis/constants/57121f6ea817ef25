@@ -1,0 +1,4 @@
+# file: /app/model/__init__.py
+# hypothesis_version: 6.151.9
+
+['./', '.meta', '.remotebatch', '.tar.gz', '/tmp/localqueue', 'Job', 'Metadata', '_', '_key', 'arcpath', 'bucket_name', 'cached', 'content_length', 'data', 'delete', 'download_fileobj', 'index.pkl', 'jobfile', 'jobid', 'jobroot', 'jobstatus', 'jobtype', 'load', 'local', 'local_jobs', 'metadata', 'next_job', 'no connection', 'orig_path', 'output', 'outqueue', 'put', 'r:gz', 'rb', 'read', 'remote', 'remote_jobs', 'results', 's3', 'type', 'unknown', 'upload_file', 'w:gz', 'wb', '~']

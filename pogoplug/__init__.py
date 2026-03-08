@@ -9,13 +9,22 @@ import requests
 
 
 class PogoplugError(IOError):
+    """Exception raised for Pogoplug API errors."""
     pass
 
 
 class Connection:
+    """Represents a connection to the Pogoplug API service."""
+
     base_url = "http://service.pogoplug.com/svc/api/json/"
 
     def __init__(self, email_or_valtoken: str, password: str | None = None):
+        """Initialize the connection to the Pogoplug service.
+
+        Args:
+            email_or_valtoken (str): Either the user's email address or an existing validation token.
+            password (str | None, optional): The user's password. Defaults to None.
+        """
         self.valtoken: str | None = None
         self._drives: list[Directory] | None = None
         if password:
@@ -27,6 +36,14 @@ class Connection:
         self.user = self.getUser()
 
     def __getattr__(self, attname: str) -> Any:
+        """Dynamically invoke API methods.
+
+        Args:
+            attname (str): The name of the API method to call.
+
+        Returns:
+            Any: A partial function ready to be called with parameters.
+        """
         # Avoid recursion for methods/attributes that exist or are dunder methods
         if attname.startswith("__"):
             raise AttributeError(attname)
@@ -36,12 +53,23 @@ class Connection:
         return functools.partial(self.invoke, attname)
 
     def invoke(self, fn: str, params: dict[str, Any] | None = None) -> Any:
+        """Invoke a specific Pogoplug API function.
+
+        Args:
+            fn (str): The API function name.
+            params (dict[str, Any] | None, optional): The parameters to pass to the function. Defaults to None.
+
+        Raises:
+            PogoplugError: If a network error occurs or the API returns an exception block.
+
+        Returns:
+            Any: The JSON-decoded response from the API, or the raw text if parsing fails.
+        """
         if not params:
             params = {}
         if self.valtoken:
             params["valtoken"] = self.valtoken
 
-        # Replacement for restclient.rest_invoke
         try:
             # Pogoplug API likely used GET or POST.
             # Assuming GET for simplicity or trying to match legacy behavior
@@ -68,6 +96,11 @@ class Connection:
 
     @property
     def drives(self) -> list["Directory"]:
+        """Retrieve the list of drives associated with the user.
+
+        Returns:
+            list[Directory]: A list of Directory objects representing the root drives.
+        """
         if not self._drives:
             services_resp = self.listServices()
             if isinstance(services_resp, dict) and "services" in services_resp:
@@ -81,26 +114,61 @@ class Connection:
 
 
 class PogoObject(dict):
+    """Base class for objects returned by the Pogoplug API, acting as a dictionary."""
+
     def __init__(self, connection: Connection, json_dict: dict[str, Any]):
+        """Initialize the PogoObject.
+
+        Args:
+            connection (Connection): The associated Pogoplug connection.
+            json_dict (dict[str, Any]): The initial dictionary data.
+        """
         super().__init__(json_dict)
         self.connection = connection
         self.flush()
 
     def __getattr__(self, attname: str) -> Any:
+        """Dynamically invoke API methods associated with this object.
+
+        Args:
+            attname (str): The name of the API method.
+
+        Returns:
+            Any: A partial function to invoke the method.
+        """
         if attname.startswith("__"):
             raise AttributeError(attname)
         return functools.partial(self.invoke, attname)
 
     def invoke(self, fn: str, params: dict[str, Any] | None = None) -> Any:
-        # Base implementation just calls connection invoke?
+        """Invoke an API function using the object's connection context.
+
+        Args:
+            fn (str): The API function name.
+            params (dict[str, Any] | None, optional): The API parameters. Defaults to None.
+
+        Returns:
+            Any: The API response.
+        """
         return self.connection.invoke(fn, params)
 
     def flush(self) -> None:
+        """Clear any cached data for the object."""
         pass
 
 
 class BaseFile(PogoObject):
+    """Represents a file or directory on a Pogoplug device."""
+
     def __init__(self, connection: Connection, deviceid: str, serviceid: str, json_dict: dict[str, Any]):
+        """Initialize the BaseFile object.
+
+        Args:
+            connection (Connection): The associated API connection.
+            deviceid (str): The device ID where the file resides.
+            serviceid (str): The service ID providing access to the file.
+            json_dict (dict[str, Any]): The dictionary containing file data.
+        """
         super().__init__(connection, json_dict)
         self.deviceid = deviceid
         self.serviceid = serviceid
@@ -108,6 +176,15 @@ class BaseFile(PogoObject):
         self.flush()
 
     def invoke(self, fn: str, params: dict[str, Any] | None = None) -> Any:
+        """Invoke an API function with contextual parameters specific to the file.
+
+        Args:
+            fn (str): The API function name.
+            params (dict[str, Any] | None, optional): Additional parameters. Defaults to None.
+
+        Returns:
+            Any: The API response.
+        """
         if not params:
             params = {}
         params["deviceid"] = self.deviceid
@@ -118,21 +195,44 @@ class BaseFile(PogoObject):
 
 
 class File(BaseFile):
+    """Represents a standard file on a Pogoplug device."""
+
     def update(self, fd_or_filename: Any) -> None:
+        """Update the file contents.
+
+        Args:
+            fd_or_filename (Any): The file descriptor or filename containing new data.
+        """
         pass
 
 
 class Directory(BaseFile):
+    """Represents a directory on a Pogoplug device."""
+
     def __init__(self, connection: Connection, deviceid: str, serviceid: str, json_dict: dict[str, Any]):
+        """Initialize the Directory object.
+
+        Args:
+            connection (Connection): The associated API connection.
+            deviceid (str): The device ID.
+            serviceid (str): The service ID.
+            json_dict (dict[str, Any]): Dictionary data for the directory.
+        """
         json_dict.setdefault("fileid", None)
         super().__init__(connection, deviceid, serviceid, json_dict)
         self._files: dict[str, BaseFile] | None = None
 
     def new_file(self) -> None:
+        """Create a new file within the directory."""
         pass
 
     @property
     def files(self) -> dict[str, BaseFile]:
+        """List files contained within this directory.
+
+        Returns:
+            dict[str, BaseFile]: A dictionary mapping filenames to file objects.
+        """
         if not self._files:
             self._files = {}
             # listFiles might fail or return structure that needs checking
@@ -148,6 +248,7 @@ class Directory(BaseFile):
         return self._files
 
     def flush(self) -> None:
+        """Clear the cached list of files."""
         self._files = None
 
 
@@ -155,6 +256,7 @@ FileTypes: dict[str, type[BaseFile]] = {"0": File, "1": Directory}
 
 
 def main() -> None:
+    """Command-line entry point for Pogoplug utilities."""
     parser = OptionParser()
     parser.add_option("--user", dest="user", help="logon as USER", metavar="USER")
     parser.add_option("-p", "--password", dest="password", help="use password PASSWORD", metavar="PASSWORD")

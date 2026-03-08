@@ -33,18 +33,30 @@ threaded = True
 
 
 class RunMe(QtCore.QThread):
+    """A thread class to run a given function asynchronously."""
+
     def __init__(self, func):
+        """Initialize the RunMe thread.
+
+        Args:
+            func (callable): The function to execute in the thread.
+        """
         super().__init__()
         self.func = func
 
     def run(self):
+        """Execute the stored function."""
         self.func()
 
 
 class ManagerMain(QtWidgets.QMainWindow):
-    def __init__(self, queue):
-        """
+    """The main window for the Batch Manager application."""
 
+    def __init__(self, queue):
+        """Initialize the main manager window.
+
+        Args:
+            queue (BatchQueue): The queue backend to interface with.
         """
         super().__init__()
         self.queue = queue
@@ -59,7 +71,6 @@ class ManagerMain(QtWidgets.QMainWindow):
 
         layout = QtWidgets.QVBoxLayout()
         layout.addWidget(jobListLabel)
-        # layout.addWidget(jobidValueLabel)
         layout.addWidget(self.jobListBox)
 
         buttonBox = QtWidgets.QDialogButtonBox()
@@ -71,7 +82,6 @@ class ManagerMain(QtWidgets.QMainWindow):
         buttonBox.addButton("Cleanup", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
         layout.addWidget(buttonBox)
 
-        # In PyQt6, QAction is in QtGui
         self.allAct = QtGui.QAction("&All", self)
         self.allAct.setCheckable(True)
         self.allAct.setShortcut("Ctrl+A")
@@ -109,12 +119,15 @@ class ManagerMain(QtWidgets.QMainWindow):
         widget.setLayout(layout)
 
     def about(self):
+        """Show the about dialog."""
         pass
 
     def settings(self):
+        """Show the settings dialog."""
         pass
 
     def refilter(self):
+        """Filter the visible jobs based on selected filter action."""
         print("running refilter")
         for job_item in self.jobs:
             job = self.jobs[job_item]
@@ -124,6 +137,7 @@ class ManagerMain(QtWidgets.QMainWindow):
                 job_item.setHidden(False)
 
     def refresh(self):
+        """Trigger a refresh of the job list from the queue."""
         self.refreshButton.setText("Refreshing")
         if threaded:
             self.refresher = RunMe(self._refresh)
@@ -132,6 +146,7 @@ class ManagerMain(QtWidgets.QMainWindow):
             self._refresh()
 
     def _refresh(self):
+        """Internal method to perform the queue refresh operation."""
         self.jobListBox.clear()
         self.jobs = {}
         for job in self.queue.allJobs():
@@ -145,13 +160,12 @@ class ManagerMain(QtWidgets.QMainWindow):
             self.refreshButton.setText("Connect")
 
     def newjob(self):
+        """Open the Add Job dialog to submit a new job."""
         dialog = AddJobDialog(self.queue)
         return dialog.exec()
 
     def retrieve(self):
-        """
-
-        """
+        """Retrieve the results of the currently selected job."""
         job_item = self.jobListBox.currentItem()
         if job_item is None:
             return
@@ -163,27 +177,35 @@ class ManagerMain(QtWidgets.QMainWindow):
             print("No path given")
             return
         try:
-            notify("Retrieving job: " + str(job))
+            notify(f"Retrieving job: {str(job)}")
             tempdir = job.getFiles(str(path))
-            notify("unzipped to %s" % tempdir)
+            notify(f"unzipped to {tempdir}")
             files = os.listdir(tempdir)
-            print("path %s files %s" % (tempdir, files))
+            print(f"path {tempdir} files {files}")
         except Exception:
             notify("Unable to retrieve file.")
 
     def delete(self):
+        """Delete the currently selected job from the queue."""
         item = self.jobListBox.currentItem()
         if not item:
             return
         job = self.jobs[item]
-        notify("Deleting job: " + str(job))
+        notify(f"Deleting job: {str(job)}")
         self.queue.delete(job)
         self.jobListBox.takeItem(self.jobListBox.row(item))
-        # item.setHidden(True) # Removed from listbox already
 
 
 class AddJobDialog(QtWidgets.QDialog):
+    """Dialog window for adding a new job to the queue."""
+
     def __init__(self, queue, parent=None):
+        """Initialize the Add Job dialog.
+
+        Args:
+            queue (BatchQueue): The queue backend to submit jobs to.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
         self.queue = queue
         self.job = queue.job_class()
@@ -192,12 +214,9 @@ class AddJobDialog(QtWidgets.QDialog):
         if self.job.path is None:
              self.job.path = os.getcwd()
 
-        # fileInfo = QtCore.QFileInfo(os.path.join(self.job.path, self.job.jobfile if self.job.jobfile else ""))
-
         tabWidget = QtWidgets.QTabWidget()
         self.generalTab = GeneralTab(self.job)
         tabWidget.addTab(self.generalTab, "General")
-        # tabWidget.addTab(PermissionsTab(fileInfo), "Permissions")
         tabWidget.addTab(DetailsTab(self.job), "Details")
 
         buttonBox = QtWidgets.QDialogButtonBox(
@@ -215,20 +234,33 @@ class AddJobDialog(QtWidgets.QDialog):
         self.setWindowTitle("Remote Batch Runner")
 
     def exec(self):
+        """Execute the dialog and add the job if accepted.
+
+        Returns:
+            bool: True if the dialog was accepted and job queued.
+        """
         if super().exec():
             job = self.job
-            notify("Bundling and sending " + str(job))
+            notify(f"Bundling and sending {str(job)}")
             self.queue.queue_job(job)
             return True
 
     def accept(self):
+        """Handle dialog acceptance, updating the job target."""
         self.job.set_jobfile(self.generalTab.targetPath, self.generalTab.targetFile)
-        # print "self.job.set_jobfile(%s, %s)"%(self.generalTab.targetPath, self.generalTab.targetFile)
         return super(self.__class__, self).accept()
 
 
 class GeneralTab(QtWidgets.QWidget):
+    """Tab containing general settings for a job like file paths."""
+
     def __init__(self, job, parent=None):
+        """Initialize the General Tab.
+
+        Args:
+            job (Job): The target job object to configure.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
         self.job = job
 
@@ -237,35 +269,34 @@ class GeneralTab(QtWidgets.QWidget):
 
         self.pathEdit = QtWidgets.QLineEdit(job.path)
 
-        # lastReadLabel = QtGui.QLabel("Last Read:")
-        # lastReadValueLabel = QtGui.QLabel(fileInfo.lastRead().toString())
-        # lastReadValueLabel.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
-
-        # lastModLabel = QtGui.QLabel("Last Modified:")
-        # lastModValueLabel = QtGui.QLabel(fileInfo.lastModified().toString())
-        # lastModValueLabel.setFrameStyle(QtGui.QFrame.Panel | QtGui.QFrame.Sunken)
-
         mainLayout = QtWidgets.QVBoxLayout()
         mainLayout.addWidget(QtWidgets.QLabel("Job File/Path:"))
         mainLayout.addWidget(self.fileNameEdit)
         mainLayout.addWidget(self.pathEdit)
         mainLayout.addWidget(browseButton)
-        # mainLayout.addWidget(lastReadLabel)
-        # mainLayout.addWidget(lastReadValueLabel)
-        # mainLayout.addWidget(lastModLabel)
-        # mainLayout.addWidget(lastModValueLabel)
         mainLayout.addStretch(1)
         self.setLayout(mainLayout)
 
     @property
     def targetPath(self):
+        """Get the absolute target path from the UI.
+
+        Returns:
+            str: The target directory path.
+        """
         return os.path.abspath(str(self.pathEdit.text()))
 
     @property
     def targetFile(self):
+        """Get the target file name from the UI.
+
+        Returns:
+            str: The target file name.
+        """
         return str(self.fileNameEdit.text())
 
     def browse(self):
+        """Open a file dialog to browse for a target job file."""
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Job File",
                                                      self.pathEdit.text())
         if filename:
@@ -275,13 +306,30 @@ class GeneralTab(QtWidgets.QWidget):
             self.job.set_jobfile(path, filename)
 
     def createButton(self, text, member):
+        """Create a button connected to a specific member function.
+
+        Args:
+            text (str): The label for the button.
+            member (callable): The function to connect to the clicked signal.
+
+        Returns:
+            QPushButton: The created button instance.
+        """
         button = QtWidgets.QPushButton(text)
         button.clicked.connect(member)
         return button
 
 
 class PermissionsTab(QtWidgets.QWidget):
+    """Tab displaying file permissions and ownership."""
+
     def __init__(self, fileInfo, parent=None):
+        """Initialize the Permissions Tab.
+
+        Args:
+            fileInfo (QFileInfo): The target file info object.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
 
         permissionsGroup = QtWidgets.QGroupBox("Permissions")
@@ -329,7 +377,15 @@ class PermissionsTab(QtWidgets.QWidget):
 
 
 class DetailsTab(QtWidgets.QWidget):
+    """Tab containing detailed settings for a job, such as its type."""
+
     def __init__(self, job, parent=None):
+        """Initialize the Details Tab.
+
+        Args:
+            job (Job): The target job object to configure.
+            parent (QWidget, optional): Parent widget. Defaults to None.
+        """
         super().__init__(parent)
         self.job = job
 
@@ -341,31 +397,18 @@ class DetailsTab(QtWidgets.QWidget):
         self.applicationsListBox.insertItems(0, applications)
         self.applicationsListBox.itemSelectionChanged.connect(self.update_job)
 
-        # alwaysCheckBox = QtWidgets.QCheckBox()
-
-        # if False:
-        #     alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
-        #                                      "open files with the extension '%s'" % fileInfo.suffix())
-        # else:
-        #     alwaysCheckBox = QtWidgets.QCheckBox("Always use this application to "
-        #                                      "open this type of file")
-
-        # jobidLabel = QtWidgets.QLabel("Job ID:")
         self.jobID = job.id
-        # jobidValueLabel = QtWidgets.QLabel(self.jobID)
-        # jobidValueLabel.setFrameStyle(QtWidgets.QFrame.Shape.Panel | QtWidgets.QFrame.Shadow.Sunken)
 
         layout = QtWidgets.QVBoxLayout()
-        # layout.addWidget(jobidLabel)
-        # layout.addWidget(jobidValueLabel)
         layout.addWidget(self.applicationsListBox)
-        # layout.addWidget(alwaysCheckBox)
         self.setLayout(layout)
 
     def update_job(self):
+        """Update the job type based on list box selection."""
         item = self.applicationsListBox.currentItem()
         if item:
              self.job.type = str(item.text())
 
     def showEvent(self, QShowEvent):
+        """Handle widget show events."""
         super().showEvent(QShowEvent)
