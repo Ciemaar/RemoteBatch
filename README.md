@@ -76,6 +76,8 @@ ______________________________________________________________________
 
 ## Developer Documentation
 
+**New to PyQt or GUI development?** Read the [PyQt6 Developer Guide](PYQT_GUIDE.md) to understand the core concepts used in this application.
+
 ### Setup
 
 To set up the development environment, install the development dependencies:
