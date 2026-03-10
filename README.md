@@ -4,33 +4,36 @@ A modern Python 3.12+ application for delegating work from one machine to anothe
 
 ## Features
 
-*   **GUI Client**: User-friendly Qt6 interface to add, retrieve, and manage jobs.
-*   **Job Management**: Support for different job types (e.g., Povray, Upgrade, Shell).
-*   **Queue Abstraction**: Built-in support for AWS S3 queues (`BatchQueue`) and a fallback filesystem queue (`LocalQueue`) for testing and local execution.
-*   **Modern Python Tooling**: Uses `ruff` for linting, `pyright` for type checking, and `pytest` for testing.
+- **GUI Client**: User-friendly Qt6 interface to add, retrieve, and manage jobs.
+- **Job Management**: Support for different job types (e.g., Povray, Upgrade, Shell).
+- **Queue Abstraction**: Built-in support for AWS S3 queues (`BatchQueue`) and a fallback filesystem queue (`LocalQueue`) for testing and local execution.
+- **Modern Python Tooling**: Uses `ruff` for linting, `pyright` for type checking, and `pytest` for testing.
 
----
+______________________________________________________________________
 
 ## User Documentation
 
 ### Installation
 
-1.  **Clone the repository**:
-    ```bash
-    git clone https://github.com/Ciemaar/RemoteBatch.git
-    cd RemoteBatch
-    ```
+1. **Clone the repository**:
 
-2.  **Create a virtual environment**:
-    ```bash
-    python -m venv env
-    source env/bin/activate  # On Windows, use `env\Scripts\activate`
-    ```
+   ```bash
+   git clone https://github.com/Ciemaar/RemoteBatch.git
+   cd RemoteBatch
+   ```
 
-3.  **Install dependencies**:
-    ```bash
-    pip install -r requirements.txt
-    ```
+1. **Create a virtual environment**:
+
+   ```bash
+   python -m venv env
+   source env/bin/activate  # On Windows, use `env\Scripts\activate`
+   ```
+
+1. **Install dependencies**:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
 
 ### Running the Applications
 
@@ -54,10 +57,10 @@ The Batch Manager is the main GUI for overseeing all jobs in the queue.
 python BatchManager.py
 ```
 
-*   **Retrieve**: Download the results of a completed job to a specified local directory.
-*   **Delete**: Remove a job from the queue.
-*   **New**: Open a dialog to add a new job to the queue. You can specify the file, path, and job type (e.g., "Povray").
-*   **Connect/Refresh**: Manually refresh the list of jobs from the remote queue.
+- **Retrieve**: Download the results of a completed job to a specified local directory.
+- **Delete**: Remove a job from the queue.
+- **New**: Open a dialog to add a new job to the queue. You can specify the file, path, and job type (e.g., "Povray").
+- **Connect/Refresh**: Manually refresh the list of jobs from the remote queue.
 
 #### 3. Server Daemon (`server.py`)
 
@@ -69,13 +72,14 @@ python server.py
 
 *Note: The server currently specifically processes "Povray" job types by invoking the `/usr/bin/povray` executable.*
 
----
+______________________________________________________________________
 
 ## Developer Documentation
 
 ### Setup
 
 To set up the development environment, install the development dependencies:
+
 ```bash
 pip install -r requirements-dev.txt
 ```
@@ -84,31 +88,32 @@ pip install -r requirements-dev.txt
 
 The application is built around the concept of a "Queue" and "Jobs".
 
-*   **`model.Job`**: Represents a unit of work. It encapsulates the file payload (stored as a `.tar.gz` archive), metadata (job type, ID), and logic to serialize/deserialize itself.
-*   **`model.BatchQueue`**: The interface to the queue. The default implementation targets an AWS S3 bucket, where jobs are stored as objects and metadata is stored in object metadata.
-*   **`model.LocalQueue`**: A filesystem-backed implementation of the queue used for local testing without AWS credentials. It stores job payloads and metadata (`.meta` files) in a local directory.
+- **`model.Job`**: Represents a unit of work. It encapsulates the file payload (stored as a `.tar.gz` archive), metadata (job type, ID), and logic to serialize/deserialize itself.
+- **`model.BatchQueue`**: The interface to the queue. The default implementation targets an AWS S3 bucket, where jobs are stored as objects and metadata is stored in object metadata.
+- **`model.LocalQueue`**: A filesystem-backed implementation of the queue used for local testing without AWS credentials. It stores job payloads and metadata (`.meta` files) in a local directory.
 
 ### Adding New Job Types
 
 To add a new job type:
-1.  Update the `DetailsTab` in `view/__init__.py` to include the new job type in the `applicationsListBox`.
-2.  Modify the `processJob` function in `server.py` to handle the specific execution logic for the new job type.
+
+1. Update the `DetailsTab` in `view/__init__.py` to include the new job type in the `applicationsListBox`.
+1. Modify the `processJob` function in `server.py` to handle the specific execution logic for the new job type.
 
 ### Tooling & Setup
 
-*   **Type Checking**: This project uses `pyright`.
-    ```bash
-    pyright
-    ```
-*   **Linting & Formatting**: This project uses `ruff`.
-    ```bash
-    ruff check .
-    ruff format .
-    ```
-*   **Markdown Formatting**:
-    ```bash
-    mdformat .
-    ```
+- **Type Checking**: This project uses `pyright`.
+  ```bash
+  pyright
+  ```
+- **Linting & Formatting**: This project uses `ruff`.
+  ```bash
+  ruff check .
+  ruff format .
+  ```
+- **Markdown Formatting**:
+  ```bash
+  mdformat .
+  ```
 
 ### Testing
 
