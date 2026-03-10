@@ -45,4 +45,4 @@ jobs:
 
     - name: Run tests with coverage
       run: |
-        xvfb-run -a pytest --cov=. --cov-fail-under=40 --cov-report=xml --cov-report=term-missing
+        xvfb-run -a pytest

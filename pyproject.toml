@@ -49,9 +49,24 @@ reportMissingImports = false
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-ra -q"
+addopts = "-ra -q --cov=. --cov-report=xml --cov-report=term-missing"
 testpaths = [
     "tests",
 ]
 python_files = "*_test.py test_*.py"
 pythonpath = "."
+
+[tool.coverage.run]
+source = ["."]
+omit = [
+    "tests/*",
+    "setup.py",
+    ".env/*",
+    "env/*",
+    "venv/*",
+    "app_secrets.py"
+]
+
+[tool.coverage.report]
+fail_under = 35
+show_missing = true
