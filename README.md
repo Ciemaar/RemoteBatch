@@ -32,7 +32,7 @@ ______________________________________________________________________
 1. **Install dependencies**:
 
    ```bash
-   pip install -r requirements.txt
+   pip install .
    ```
 
 ### Running the Applications
@@ -83,7 +83,7 @@ ______________________________________________________________________
 To set up the development environment, install the development dependencies:
 
 ```bash
-pip install -r requirements-dev.txt
+pip install -e ".[dev]"
 ```
 
 ### Architecture
