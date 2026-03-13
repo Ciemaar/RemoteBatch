@@ -2,22 +2,19 @@
 
 """Server daemon for processing jobs from the queue."""
 
-# from gevent import monkey
-# monkey.patch_all()
-
-import contextlib
 import logging
-import os
 import subprocess
+from pathlib import Path
 from time import sleep
 
-# from boto.exception import S3ResponseError # boto3 doesn't use this
-from model import BatchQueue, Results
+import click
+
+from remotebatch.model import BatchQueue, Results
 
 log = logging.getLogger(name=__name__)
 
-with contextlib.suppress(OSError):
-    os.makedirs(os.path.expanduser("~/.remotebatch/outqueue"))
+outqueue_path = Path.home() / ".remotebatch" / "outqueue"
+outqueue_path.mkdir(parents=True, exist_ok=True)
 
 
 def processJob(job):
@@ -33,13 +30,14 @@ def processJob(job):
         print(f"povjob {job.jobfile}")
         job.getFiles()
         print(f"calling povray on {job.path}/{job.jobfile}")
-        os.mkdir(os.path.join(job.path, "output"))
-        status = subprocess.call(("/usr/bin/povray",
-                                  job.jobfile), cwd=job.path)
-        print(f"root files {os.listdir(job.path)}")
-        files = os.listdir(os.path.join(job.path, "output"))
-        print(f"output files {files}")
-        result = Results(f"{job.id}_{job.step + 1}", os.path.join(job.path, "output"), status)
+
+        output_dir = Path(job.path) / "output"
+        output_dir.mkdir(exist_ok=True)
+
+        status = subprocess.call(("/usr/bin/povray", job.jobfile), cwd=job.path)
+
+        # files = os.listdir(output_dir)
+        result = Results(f"{job.id}_{job.step + 1}", str(output_dir), status)
         print(f"result: {result.path}")
         result.mkTar()
         return result
@@ -51,14 +49,14 @@ def processJob(job):
 
         tempdir = job.getFiles()
         print(f"unzipped to {tempdir}")
-        files = os.listdir(tempdir)
-        print(f"path {tempdir} files {files}")
         if not job.type:
             job.mark_complete()
         return None
 
 
-if __name__ == "__main__":
+@click.command()
+def main():
+    """Run the batch processing server."""
     batch_queue = BatchQueue()
     result_queue = BatchQueue()
     while True:
@@ -86,3 +84,6 @@ if __name__ == "__main__":
             sleep(180)
         sleep(120)
         print("Checking jobs")
+
+if __name__ == "__main__":
+    main()

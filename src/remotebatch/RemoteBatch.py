@@ -25,34 +25,34 @@
 ##
 #############################################################################
 
-import contextlib
-import os
-import os.path
 import sys
+from pathlib import Path
 
+import click
 from PyQt6 import QtWidgets
 
-from controller import job_dialog
-from model import BatchQueue, Results
-
-ARGS_MIN_LENGTH = 2
+from remotebatch.controller import job_dialog
+from remotebatch.model import BatchQueue, Results
 
 
 class RemoteBatchApp(QtWidgets.QApplication):
     """The main client application for submitting jobs to RemoteBatch."""
 
-    def __init__(self, argv, *args, **xargs):
+    def __init__(self, path: str, argv: list[str], *args, **xargs):
         """Initialize the RemoteBatchApp.
 
         Args:
-            argv (list): Command-line arguments.
+            path (str): The initial path to open for jobs.
+            argv (list[str]): Command-line arguments.
             *args: Variable length argument list.
             **xargs: Arbitrary keyword arguments.
         """
         super().__init__(argv, *args, **xargs)
-        self.path = argv[1] if len(argv) >= ARGS_MIN_LENGTH else "./"
-        with contextlib.suppress(OSError):
-            os.makedirs(os.path.expanduser("~/.remotebatch/outqueue"))
+        self.path = path
+
+        # Pathlib equivalent of os.makedirs
+        outqueue_path = Path.home() / ".remotebatch" / "outqueue"
+        outqueue_path.mkdir(parents=True, exist_ok=True)
 
     def start(self):
         """Start the client application and open the job submission dialog."""
@@ -60,9 +60,15 @@ class RemoteBatchApp(QtWidgets.QApplication):
         job_dialog(self.path, BatchQueue())
 
 
-if __name__ == "__main__":
+@click.command()
+@click.argument("path", default="./", type=click.Path(exists=True))
+def main(path: str):
+    """Start the Remote Batch GUI application to submit jobs.
+
+    PATH is the initial directory or file to load. Defaults to current directory.
+    """
     print("in main")
-    app = RemoteBatchApp(sys.argv)
+    app = RemoteBatchApp(path, sys.argv)
     print("created remote batch app")
     app.start()
     try:
@@ -72,3 +78,7 @@ if __name__ == "__main__":
                 continue
     except AttributeError:
         resultQueue = None
+
+
+if __name__ == "__main__":
+    main()

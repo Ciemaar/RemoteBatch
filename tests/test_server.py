@@ -3,8 +3,8 @@
 import os
 import tempfile
 
-from model import Job, Results
-from server import processJob
+from remotebatch.model import Job, Results
+from remotebatch.server import processJob
 
 
 def test_process_job_povray(mocker):

@@ -3,13 +3,12 @@
 import contextlib
 import io
 import logging
-import os
 import pickle
 import tarfile
 import tempfile
 import uuid
 from collections.abc import Generator
-from typing import Any, Optional
+from pathlib import Path
 
 # Try to import boto3, but allow it to fail if we are just testing local queue
 try:
@@ -17,7 +16,7 @@ try:
 except ImportError:
     boto3 = None
 
-from app_secrets import REMOTE_BATCH_BUCKET
+from remotebatch.app_secrets import REMOTE_BATCH_BUCKET
 
 log = logging.getLogger(__name__)
 
@@ -30,13 +29,13 @@ class Job:
     into a tarball format for storage in a queue.
     """
 
-    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: Any | None = None) -> None:
+    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: object | None = None) -> None:
         """Initialize a Job.
 
         Args:
             jobfile_or_path (str, optional): The base path or the specific file for the job. Defaults to "./".
             jobfile (str | None, optional): The specific job file within the path. Defaults to None.
-            s3key (Any | None, optional): An existing S3 object key or LocalKey to load the job from. Defaults to None.
+            s3key (object | None, optional): An existing S3 key or LocalKey. Defaults to None.
         """
         self.step = 0
         self.id: str
@@ -47,7 +46,7 @@ class Job:
         self.path: str | None = None
         self.jobroot: str | None = None
         self.jobfile: str | None = None
-        self._key: Any | None = s3key
+        self._key: object | None = s3key
         self.jobpath: str | None = None
         self.status: str | None = None
 
@@ -67,7 +66,6 @@ class Job:
             self.type = metadata.get("jobtype")
             self.next_job = metadata.get("next_job")
 
-            # Content length logic depends on whether s3key is Boto3 object or LocalKey
             if hasattr(s3key, "content_length"):
                 self.size = s3key.content_length
             else:
@@ -88,18 +86,17 @@ class Job:
             self._arcpath = "jobroot"
             self.next_job = None
 
-    def _get_metadata(self, key: Any) -> dict[str, Any]:
+    def _get_metadata(self, key: object) -> dict[str, object]:
         """Extract metadata from an S3 key or LocalKey.
 
         Args:
-            key (Any): The storage key object.
+            key (object): The storage key object.
 
         Returns:
-            dict[str, Any]: The extracted metadata dictionary.
+            dict[str, object]: The extracted metadata dictionary.
         """
         if hasattr(key, "metadata"):
             return key.metadata
-        # If it's a boto3 Object, we might need to reload it to get metadata if not present
         if hasattr(key, "load"):
             with contextlib.suppress(Exception):
                 key.load()
@@ -164,26 +161,23 @@ class Job:
                     with contextlib.suppress(KeyError):
                         tar.extract(self.jobfile, self.path, filter="data")
 
-                self.jobroot = os.path.join(self.path, self._arcpath)
+                self.jobroot = str(Path(self.path) / self._arcpath)
                 return self.jobroot
         except tarfile.ReadError:
             if not to:
                 self.path = tempfile.mkdtemp()
             else:
                 self.path = to
-            self.jobroot = os.path.join(self.path, self._arcpath)
+            self.jobroot = str(Path(self.path) / self._arcpath)
             return self.jobroot
 
-    def mark_complete(self, next_job: Optional["Job"] = None) -> None:
+    def mark_complete(self, next_job: "Job | None" = None) -> None:
         """Mark the job as complete and link the next step if applicable.
 
         Args:
             next_job (Job | None, optional): The job representing the next processing step. Defaults to None.
         """
         self.cleanup()
-        if next_job and self._key:
-            # Stub for marking complete in S3
-            pass
 
     @property
     def isComplete(self) -> bool:
@@ -199,11 +193,11 @@ class Job:
         if self._key and hasattr(self._key, "delete"):
             self._key.delete()
 
-    def store_in_key(self, s3key: Any) -> None:
+    def store_in_key(self, s3key: object) -> None:
         """Serialize the job payload and upload it to the storage queue.
 
         Args:
-            s3key (Any): The storage key object (e.g., boto3 Object or LocalKey) to upload to.
+            s3key (object): The storage key object (e.g., boto3 Object or LocalKey) to upload to.
         """
         bundleFile = self.mkTar()
         metadata = {"jobid": self.id, "arcpath": self._arcpath}
@@ -215,14 +209,13 @@ class Job:
             metadata["jobtype"] = self.type
 
         if hasattr(s3key, "put"):
-            with open(bundleFile, "rb") as data:
-                # Boto3 expects Metadata as a dict of strings
+            with Path(bundleFile).open("rb") as data:
                 s3key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
         elif hasattr(s3key, "upload_file"):
             s3key.upload_file(bundleFile, ExtraArgs={"Metadata": {k: str(v) for k, v in metadata.items()}})
 
         self._key = s3key
-        os.unlink(bundleFile)
+        Path(bundleFile).unlink()
 
     def set_jobfile(self, jobfile_or_path: str = "./", jobfile: str | None = None) -> None:
         """Set the target file and path for the job.
@@ -232,11 +225,13 @@ class Job:
             jobfile (str | None, optional): The specific file name within the path. Defaults to None.
         """
         if jobfile is None:
-            if os.path.isdir(jobfile_or_path):
+            p = Path(jobfile_or_path).resolve()
+            if p.is_dir():
                 self.jobfile = ""
-                self.path = os.path.abspath(jobfile_or_path)
+                self.path = str(p)
             else:
-                self.path, self.jobfile = os.path.split(os.path.abspath(jobfile_or_path))
+                self.path = str(p.parent)
+                self.jobfile = p.name
         else:
             self.path = jobfile_or_path
             self.jobfile = jobfile
@@ -248,17 +243,17 @@ class Job:
         Returns:
             str: The local file path to the created tarball.
         """
-        filename = os.path.expanduser(os.path.join("~", ".remotebatch", "outqueue", self.id + ".tar.gz"))
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        filename = Path.home() / ".remotebatch" / "outqueue" / f"{self.id}.tar.gz"
+        filename.parent.mkdir(parents=True, exist_ok=True)
 
         with tarfile.open(filename, "w:gz") as tfile:
             if self.jobpath:
                 tfile.add(self.jobpath, arcname=self._arcpath, recursive=True)
             if self.jobpath and self.jobfile:
-                filepath = os.path.join(self.jobpath, self.jobfile)
-                if os.path.exists(filepath):
+                filepath = Path(self.jobpath) / self.jobfile
+                if filepath.exists():
                     tfile.add(filepath, arcname=self.jobfile)
-        return filename
+        return str(filename)
 
 
 class QueuedJob(Job):
@@ -277,22 +272,22 @@ class ClientJob(Job):
     Handles actions that are pending execution when offline.
     """
 
-    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: Any | None = None) -> None:
+    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: object | None = None) -> None:
         """Initialize a ClientJob.
 
         Args:
             jobfile_or_path (str, optional): The base path or file. Defaults to "./".
             jobfile (str | None, optional): The specific file name. Defaults to None.
-            s3key (Any | None, optional): The storage key. Defaults to None.
+            s3key (object | None, optional): The storage key. Defaults to None.
         """
         super().__init__(jobfile_or_path, jobfile, s3key)
         self.pending_actions: set[str] = set()
 
-    def __getstate__(self) -> dict[str, Any]:
+    def __getstate__(self) -> dict[str, object]:
         """Serialize state, excluding non-pickleable attributes like the storage key.
 
         Returns:
-            dict[str, Any]: The object state for serialization.
+            dict[str, object]: The object state for serialization.
         """
         ret = dict(self.__dict__)
         if "_key" in ret:
@@ -318,27 +313,29 @@ class Results:
     """Represents the output and execution status of a completed Job."""
 
     def __init__(
-        self, job_id: str | None = None, path: str | None = None, status: Any | None = None, s3key: Any | None = None
+        self,
+        job_id: str | None = None,
+        path: str | None = None,
+        status: object | None = None,
+        s3key: object | None = None,
     ) -> None:
         """Initialize the Results object.
 
         Args:
             job_id (str | None, optional): The ID of the original job. Defaults to None.
             path (str | None, optional): The local path containing the output files. Defaults to None.
-            status (Any | None, optional): The execution status or exit code. Defaults to None.
-            s3key (Any | None, optional): The storage key containing stored results. Defaults to None.
+            status (object | None, optional): The execution status or exit code. Defaults to None.
+            s3key (object | None, optional): The storage key containing stored results. Defaults to None.
         """
         self.orig_path: str | None = None
         if s3key:
-            metadata = s3key.metadata if hasattr(s3key, "metadata") else {}
+            metadata = getattr(s3key, "metadata", {})
 
             self.type = metadata.get("jobtype")
             self.id = metadata.get("jobid")
             self.path = None
             self.status = metadata.get("jobstatus")
-            self._arcpath = metadata.get("arcpath")
-            if not self._arcpath:
-                self._arcpath = "output"
+            self._arcpath = metadata.get("arcpath", "output")
             self._key = s3key
         else:
             self.type = "results"
@@ -353,21 +350,19 @@ class Results:
         Returns:
             str: The path to the created results tarball.
         """
-        filename = os.path.expanduser(
-            os.path.join("~", ".remotebatch", "outqueue", f"{self.id}_{self.type}.tar.gz")
-        )
-        os.makedirs(os.path.dirname(filename), exist_ok=True)
+        filename = Path.home() / ".remotebatch" / "outqueue" / f"{self.id}_{self.type}.tar.gz"
+        filename.parent.mkdir(parents=True, exist_ok=True)
 
         with tarfile.open(filename, "w:gz") as tfile:
             if self.path:
                 tfile.add(self.path, arcname=self._arcpath, recursive=True)
-        return filename
+        return str(filename)
 
-    def store_in_key(self, key: Any) -> None:
+    def store_in_key(self, key: object) -> None:
         """Upload the results tarball and metadata to the queue storage.
 
         Args:
-            key (Any): The storage key to upload to.
+            key (object): The storage key to upload to.
         """
         print(f"Storing results for job {self.id} in {key}")
         bundleFile = self.mkTar()
@@ -381,10 +376,10 @@ class Results:
             metadata["arcpath"] = self._arcpath
 
         if hasattr(key, "put"):
-            with open(bundleFile, "rb") as data:
+            with Path(bundleFile).open("rb") as data:
                 key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
 
-        os.unlink(bundleFile)
+        Path(bundleFile).unlink()
 
 
 class BatchQueue:
@@ -400,8 +395,8 @@ class BatchQueue:
         self.openJobs: dict[str, bool] = {}
         self.job_class = job_class
         self.bucket_name = bucket
-        self.s3: Any = None
-        self.bucket: Any = None
+        self.s3: object | None = None
+        self.bucket: object | None = None
         if boto3:
             self.connect(bucket)
 
@@ -416,11 +411,9 @@ class BatchQueue:
         """
         if not boto3:
             return False
-        try:
+        with contextlib.suppress(Exception):
             self.s3 = boto3.resource("s3")
             self.bucket = self.s3.Bucket(bucket)
-        except Exception:
-            pass
         return True
 
     def queue_job(self, job: Job) -> None:
@@ -497,7 +490,7 @@ class ClientQueue(BatchQueue):
         local_path: str,
         bucket: str = REMOTE_BATCH_BUCKET,
         job_class: type[Job] = ClientJob,
-        check_network: Any = lambda: True,
+        check_network: object = lambda: True,
     ) -> None:
         """Initialize the ClientQueue.
 
@@ -505,14 +498,14 @@ class ClientQueue(BatchQueue):
             local_path (str): The local directory path for caching jobs offline.
             bucket (str, optional): The S3 bucket name. Defaults to REMOTE_BATCH_BUCKET.
             job_class (type[Job], optional): The job class to instantiate. Defaults to ClientJob.
-            check_network (Callable, optional): Verify network connectivity. Defaults to always returning True.
+            check_network (object, optional): Verify network connectivity. Defaults to always returning True.
         """
         self.openJobs: dict[str, bool] = {}
         self.local_jobs: list[Job] = []
         self.cached_remote_jobs: list[Job] = []
-        self.local_path = local_path
+        self.local_path = Path(local_path)
         self.job_class = job_class
-        self.bucket: Any | None = None
+        self.bucket: object | None = None
         self.bucket_name = bucket
         self.check_network = check_network
         self.s3 = None
@@ -526,7 +519,7 @@ class ClientQueue(BatchQueue):
         Returns:
             bool: True if connected successfully, False otherwise.
         """
-        if not self.check_network():
+        if not callable(self.check_network) or not self.check_network():
             return False
         return super().connect(self.bucket_name)
 
@@ -584,16 +577,16 @@ class ClientQueue(BatchQueue):
 
     def save(self) -> None:
         """Save the local queue state to disk."""
-        os.makedirs(self.local_path, exist_ok=True)
-        with open(os.path.join(self.local_path, "index.pkl"), "wb") as f:
+        self.local_path.mkdir(parents=True, exist_ok=True)
+        with (self.local_path / "index.pkl").open("wb") as f:
             pickle.dump({"remote_jobs": self.remote_jobs, "local_jobs": self.local_jobs}, f)
 
     def load(self) -> None:
         """Load the local queue state from disk."""
         try:
-            with open(os.path.join(self.local_path, "index.pkl"), "rb") as f:
+            with (self.local_path / "index.pkl").open("rb") as f:
                 state = pickle.load(f)
-        except (OSError, EOFError, FileNotFoundError):
+        except (OSError, EOFError):
             pass
         else:
             self.local_jobs = state.get("local_jobs", [])
@@ -628,11 +621,11 @@ class LocalKey:
             root (str): The root directory for the local queue.
             key (str): The object key (file name).
         """
-        self.root = root
+        self.root = Path(root)
         self.key = key
-        self.data_path = os.path.join(root, key)
-        self.meta_path = os.path.join(root, key + ".meta")
-        self.metadata: dict[str, Any] = {}
+        self.data_path = self.root / key
+        self.meta_path = self.root / f"{key}.meta"
+        self.metadata: dict[str, object] = {}
         self.bucket_name = "local"
         self.content_length = 0
         self.load()
@@ -643,47 +636,47 @@ class LocalKey:
         Returns:
             bool: True if the data file exists.
         """
-        return os.path.exists(self.data_path)
+        return self.data_path.exists()
 
-    def put(self, Body: Any, Metadata: dict[str, Any] | None = None) -> None:
+    def put(self, Body: object, Metadata: dict[str, object] | None = None) -> None:
         """Simulate uploading data to S3.
 
         Args:
-            Body (Any): The file content.
-            Metadata (dict[str, Any] | None, optional): The associated metadata. Defaults to None.
+            Body (object): The file content.
+            Metadata (dict[str, object] | None, optional): The associated metadata. Defaults to None.
         """
-        with open(self.data_path, "wb") as f:
+        with self.data_path.open("wb") as f:
             if hasattr(Body, "read"):
                 f.write(Body.read())
             else:
-                f.write(Body)
+                f.write(Body)  # type: ignore
         if Metadata:
-            with open(self.meta_path, "wb") as f:
+            with self.meta_path.open("wb") as f:
                 pickle.dump(Metadata, f)
         self.load()
 
     def load(self) -> None:
         """Load metadata and calculate content length from disk."""
-        if os.path.exists(self.meta_path):
-            with open(self.meta_path, "rb") as f:
+        if self.meta_path.exists():
+            with self.meta_path.open("rb") as f:
                 self.metadata = pickle.load(f)
-        if os.path.exists(self.data_path):
-            self.content_length = os.path.getsize(self.data_path)
+        if self.data_path.exists():
+            self.content_length = self.data_path.stat().st_size
 
     def delete(self) -> None:
         """Delete the mocked object data and metadata from disk."""
-        if os.path.exists(self.data_path):
-            os.unlink(self.data_path)
-        if os.path.exists(self.meta_path):
-            os.unlink(self.meta_path)
+        if self.data_path.exists():
+            self.data_path.unlink()
+        if self.meta_path.exists():
+            self.meta_path.unlink()
 
-    def download_fileobj(self, fileobj: Any) -> None:
+    def download_fileobj(self, fileobj: object) -> None:
         """Download the mocked object content to a file-like object.
 
         Args:
-            fileobj (Any): The file-like object to write to.
+            fileobj (object): The file-like object to write to.
         """
-        with open(self.data_path, "rb") as f:
+        with self.data_path.open("rb") as f:
             fileobj.write(f.read())
 
 
@@ -701,11 +694,11 @@ class LocalQueue(BatchQueue):
             root_path (str, optional): The directory path to use as the simulated queue. Defaults to "/tmp/localqueue".
             job_class (type[Job], optional): The job class to instantiate. Defaults to QueuedJob.
         """
-        self.root_path = root_path
+        self.root_path = Path(root_path)
         self.job_class = job_class
-        os.makedirs(self.root_path, exist_ok=True)
+        self.root_path.mkdir(parents=True, exist_ok=True)
         self.openJobs: dict[str, bool] = {}
-        self.bucket: Any = "local"  # Mock bucket
+        self.bucket: object = "local"  # Mock bucket
 
     def connect(self, bucket: str = "") -> bool:
         """Simulate connecting to a bucket.
@@ -724,7 +717,7 @@ class LocalQueue(BatchQueue):
         Args:
             job (Job): The job to store.
         """
-        key = LocalKey(self.root_path, job.id)
+        key = LocalKey(str(self.root_path), job.id)
         job.store_in_key(key)
 
     def jobs(self) -> Generator[Job, None, None]:
@@ -733,12 +726,12 @@ class LocalQueue(BatchQueue):
         Yields:
             Job: A job retrieved from the local directory.
         """
-        for filename in os.listdir(self.root_path):
-            if filename.endswith(".meta"):
+        for item in self.root_path.iterdir():
+            if item.suffix == ".meta":
                 continue
 
-            job_id = filename
-            key = LocalKey(self.root_path, job_id)
+            job_id = item.name
+            key = LocalKey(str(self.root_path), job_id)
             if key.exists():
                 yield self.job_class(s3key=key)
 
@@ -756,5 +749,5 @@ class LocalQueue(BatchQueue):
         Args:
             job (Job): The job to remove.
         """
-        key = LocalKey(self.root_path, job.id)
+        key = LocalKey(str(self.root_path), job.id)
         key.delete()

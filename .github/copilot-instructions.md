@@ -1,6 +1,9 @@
 You are an AI assistant helping with a Python 3.12+ project.
 
-- Follow instructions in `AGENTS.md`.
-- Prefer modern Python syntax (f-strings, type hints, dataclasses where appropriate).
-- Ensure all code is covered by tests.
-- When modifying GUI code, ensure it is compatible with PyQt6.
+- Follow all instructions in `AGENTS.md`.
+- Adhere strictly to the architecture and tooling rules specified.
+- Use `src`-based layout, `pyproject.toml` for all config, `click`, and `pydantic-settings`.
+- Enforce strict typing without legacy `typing` imports and avoid `Any`.
+- Use `pathlib.Path` and context managers for cleanup.
+- Maintain test coverage and use `pytest`.
+- Write meaningful Google-style docstrings.

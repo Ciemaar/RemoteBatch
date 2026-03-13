@@ -3,21 +3,20 @@
 from unittest.mock import MagicMock
 
 import pytest
-
-from model import BatchQueue, ClientQueue, Job
+from remotebatch.model import BatchQueue, ClientQueue, Job
 
 
 @pytest.fixture
 def mock_boto3(mocker):
     """Mock boto3 library."""
-    mock_boto = mocker.patch("model.boto3")
+    mock_boto = mocker.patch("remotebatch.model.boto3")
     mock_s3 = MagicMock()
     mock_bucket = MagicMock()
     mock_boto.resource.return_value = mock_s3
     mock_s3.Bucket.return_value = mock_bucket
 
     # We must patch the boto3 imported at the top of model/__init__ too
-    import model
+    import remotebatch.model as model
     model.boto3 = mock_boto
 
     return mock_boto, mock_bucket
@@ -47,7 +46,7 @@ def test_batch_queue_jobs_generator(mock_boto3, mocker):
     mock_bucket.Object.return_value = mock_full_obj
 
     # Mock Job instantiation
-    mocker.patch("model.QueuedJob")
+    mocker.patch("remotebatch.model.QueuedJob")
 
     queue = BatchQueue()
     jobs = list(queue.jobs())

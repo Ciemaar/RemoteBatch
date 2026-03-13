@@ -3,7 +3,7 @@
 from hypothesis import given
 from hypothesis import strategies as st
 
-from model import Job
+from remotebatch.model import Job
 
 
 @given(st.text(), st.text(), st.integers())

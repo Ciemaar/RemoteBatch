@@ -6,7 +6,7 @@ import tempfile
 
 import pytest
 
-from model import Job, LocalKey, LocalQueue, Results
+from remotebatch.model import Job, LocalKey, LocalQueue, Results
 
 
 @pytest.fixture

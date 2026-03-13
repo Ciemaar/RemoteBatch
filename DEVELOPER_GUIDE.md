@@ -1,6 +1,73 @@
+# Developer Guide
+
+**New to PyQt or GUI development?** Read the [PyQt6 Developer Guide](#pyqt6-developer-guide) at the end of this document to understand the core concepts used in this application.
+
+## Setup
+
+To set up the development environment, install the development dependencies:
+
+```bash
+pip install -e ".[dev]"
+```
+
+## Architecture
+
+The application is built around the concept of a "Queue" and "Jobs".
+
+- **`model.Job`**: Represents a unit of work. It encapsulates the file payload (stored as a `.tar.gz` archive), metadata (job type, ID), and logic to serialize/deserialize itself.
+- **`model.BatchQueue`**: The interface to the queue. The default implementation targets an AWS S3 bucket, where jobs are stored as objects and metadata is stored in object metadata.
+- **`model.LocalQueue`**: A filesystem-backed implementation of the queue used for local testing without AWS credentials. It stores job payloads and metadata (`.meta` files) in a local directory.
+
+## Adding New Job Types
+
+To add a new job type:
+
+1. Update the `DetailsTab` in `remotebatch.view` to include the new job type in the `applicationsListBox`.
+1. Modify the `processJob` function in `remotebatch.server` to handle the specific execution logic for the new job type.
+
+## Tooling & Setup
+
+- **Type Checking**: This project uses `pyright`.
+  ```bash
+  pyright
+  ```
+- **Linting & Formatting**: This project uses `ruff`.
+  ```bash
+  ruff check .
+  ruff format .
+  ```
+- **Markdown Formatting**:
+  ```bash
+  mdformat .
+  ```
+- **Pre-commit**: We use `pre-commit` to enforce all the above formatting.
+  ```bash
+  pre-commit install
+  ```
+
+## Testing
+
+Tests are written using `pytest` and `hypothesis` for property-based testing. They use the `LocalQueue` to simulate the S3 queue interactions.
+
+```bash
+pytest
+```
+
+To run tests with detailed output and coverage:
+
+```bash
+pytest --cov=src/remotebatch --cov-report=term-missing
+```
+
+## AWS Implementation Notes
+
+The original implementation relied on an outdated `boto` version. It has been migrated to `boto3`. By default, tests and local runs use `LocalQueue` or mock the S3 interactions. To use the actual AWS S3 queue, ensure you have valid AWS credentials configured (e.g., via `~/.aws/credentials`) and update `app_secrets.py` with your `REMOTE_BATCH_BUCKET` name.
+
+______________________________________________________________________
+
 # PyQt6 Developer Guide
 
-This guide is intended for developers who are new to PyQt6 and graphical user interface (GUI) development in general. It explains the core concepts used in this project's GUI applications (`RemoteBatch.py` and `BatchManager.py`).
+This guide is intended for developers who are new to PyQt6 and graphical user interface (GUI) development in general. It explains the core concepts used in this project's GUI applications.
 
 ## What is PyQt6?
 
@@ -85,7 +152,7 @@ As mentioned, blocking the event loop freezes the UI. If you need to perform a s
 
 PyQt provides `QThread` for this purpose.
 
-In `view/__init__.py`, you will see a `RunMe` class that inherits from `QThread`.
+In `remotebatch.view`, you will see a `RunMe` class that inherits from `QThread`.
 
 ```python
 class RunMe(QtCore.QThread):
