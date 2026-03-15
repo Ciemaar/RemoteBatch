@@ -31,9 +31,18 @@ This document outlines the evaluation and adoption of various development tools 
 - **Evaluation**: Markdown files often drift in style. `mdformat` is an uncompromising Markdown formatter that ensures all documentation (like `README.md` and `AGENTS.md`) follows a strict CommonMark/GFM style.
 - **Decision**: Adopt `mdformat` as a mandatory CI check.
 
+## 6. Polling & Retry Utilities: `tenacity` vs. `schedule` vs. `while True`
+
+- **Evaluation**: The backend server (`server.py`) historically relied on a raw `while True` loop with explicit `sleep()` calls for polling S3 and handling temporary connection errors.
+  - **`while True`**: Simple but brittle. Prone to silent failures, complicated nested `try/except` blocks, and difficult to test cleanly.
+  - **`schedule`**: Great for running cron-like tasks (e.g., "every day at 10 AM"), but overkill for a continuous polling daemon.
+  - **`tenacity`**: An excellent, mature library specifically designed to simplify retry logic, implement exponential backoff, and manage wait states gracefully without cluttering business logic.
+- **Decision**: Adopt `tenacity`. We can replace the fragile `try/except Exception: sleep(180)` logic around the S3 polling loop with a robust `@retry` decorator, providing exponential backoff and cleaner code structure for the server daemon.
+
 ## Summary of Adopted Toolchain
 
 - **Linting & Formatting**: `ruff`
 - **Type Checking**: `pyright`
 - **Testing**: `pytest` (with `pytest-cov`, `pytest-mock`, and `hypothesis`)
 - **Markdown Formatting**: `mdformat`
+- **Retry Logic**: `tenacity`

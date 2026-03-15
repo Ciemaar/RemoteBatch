@@ -8,6 +8,7 @@ from pathlib import Path
 from time import sleep
 
 import click
+from tenacity import retry, retry_if_exception_type, wait_fixed
 
 from remotebatch.model import BatchQueue, Results
 
@@ -36,7 +37,6 @@ def processJob(job):
 
         status = subprocess.call(("/usr/bin/povray", job.jobfile), cwd=job.path)
 
-        # files = os.listdir(output_dir)
         result = Results(f"{job.id}_{job.step + 1}", str(output_dir), status)
         print(f"result: {result.path}")
         result.mkTar()
@@ -54,36 +54,53 @@ def processJob(job):
         return None
 
 
+@retry(wait=wait_fixed(180), retry=retry_if_exception_type(Exception))
+def poll_and_process(batch_queue, result_queue):
+    """Poll the queue and process jobs, retrying on generic exceptions like network failure.
+
+    Args:
+        batch_queue (BatchQueue): The queue to poll for jobs.
+        result_queue (BatchQueue): The queue to place results.
+    """
+    for job in batch_queue.jobs():
+        print(f"Found Job:  {job} type: {job.type}")
+        if job.isComplete:
+            print("Already Complete")
+            continue
+        try:
+            result = processJob(job)
+            if result:
+                result_queue.queue_job(result)
+        except Exception:
+            import traceback
+
+            traceback.print_exc()
+            print(f"System error on job {job}")
+        else:
+            job.mark_complete(result)
+        finally:
+            job.cleanup()
+
+    # We yield control and loop inside the main daemon.
+    # Tenacity handles retries if the generator or connection throws an exception (e.g. S3 error).
+
+
 @click.command()
 def main():
     """Run the batch processing server."""
     batch_queue = BatchQueue()
     result_queue = BatchQueue()
+
+    print("Starting server polling...")
     while True:
         try:
-            for job in batch_queue.jobs():
-                print(f"Found Job:  {job} type: {job.type}")
-                if job.isComplete:
-                    print("Already Complete")
-                    continue
-                try:
-                    result = processJob(job)
-                    if result:
-                        result_queue.queue_job(result)
-                except Exception:
-                    import traceback
+            poll_and_process(batch_queue, result_queue)
+        except Exception as e:
+            # Should be caught by tenacity, but catch-all for severe failures
+            log.error(f"Critical failure in polling loop: {e}")
 
-                    traceback.print_exc()
-                    print(f"System error on job {job}")
-                else:
-                    job.mark_complete(result)
-                finally:
-                    job.cleanup()
-        except Exception:
-            print("Error from S3, will retry in 5 mins")
-            sleep(180)
+        print("Checking jobs complete, waiting for next cycle...")
         sleep(120)
-        print("Checking jobs")
 
 if __name__ == "__main__":
     main()
