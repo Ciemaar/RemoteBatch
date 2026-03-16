@@ -24,7 +24,7 @@ jobs:
     - name: Install system dependencies for PyQt6
       run: |
         sudo apt-get update
-        sudo apt-get install -y libgl1-mesa-glx libegl1-mesa libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2 libxi6 libxtst6 qt6-base-dev qt6-wayland
+        sudo apt-get install -y libgl1 libegl1 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2t64 libxi6 libxtst6 qt6-base-dev qt6-wayland
 
     - name: Install dependencies
       run: |
