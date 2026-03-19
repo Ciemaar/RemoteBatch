@@ -426,7 +426,7 @@ class BatchQueue:
             key = self.bucket.Object(job.id)
             job.store_in_key(key)
 
-    def jobs(self) -> Generator[Job, None, None]:
+    def jobs(self) -> Generator[Job]:
         """Yield unhandled jobs from the remote queue.
 
         Yields:
@@ -720,7 +720,7 @@ class LocalQueue(BatchQueue):
         key = LocalKey(str(self.root_path), job.id)
         job.store_in_key(key)
 
-    def jobs(self) -> Generator[Job, None, None]:
+    def jobs(self) -> Generator[Job]:
         """Yield unhandled jobs from the local queue directory.
 
         Yields:
