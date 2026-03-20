@@ -4,6 +4,7 @@
 
 import logging
 import subprocess
+import traceback
 from pathlib import Path
 from time import sleep
 
@@ -72,8 +73,6 @@ def poll_and_process(batch_queue, result_queue):
             if result:
                 result_queue.queue_job(result)
         except Exception:
-            import traceback
-
             traceback.print_exc()
             print(f"System error on job {job}")
         else:
