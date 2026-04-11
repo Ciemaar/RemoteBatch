@@ -2,6 +2,8 @@
 
 """Main entry point for the Remote Batch client application."""
 
+import logging
+
 #############################################################################
 ##
 ## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
@@ -24,30 +26,28 @@
 ## WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 ##
 #############################################################################
-
 import sys
 from pathlib import Path
 
 import click
 from PyQt6 import QtWidgets
-
 from remotebatch.controller import job_dialog
-from remotebatch.model import BatchQueue, Results
+from remotebatch.model import BatchQueue
+
+log = logging.getLogger(__name__)
 
 
 class RemoteBatchApp(QtWidgets.QApplication):
     """The main client application for submitting jobs to RemoteBatch."""
 
-    def __init__(self, path: str, argv: list[str], *args, **xargs):
+    def __init__(self, path: str, argv: list[str]):
         """Initialize the RemoteBatchApp.
 
         Args:
             path (str): The initial path to open for jobs.
             argv (list[str]): Command-line arguments.
-            *args: Variable length argument list.
-            **xargs: Arbitrary keyword arguments.
         """
-        super().__init__(argv, *args, **xargs)
+        super().__init__(argv)
         self.path = path
 
         # Pathlib equivalent of os.makedirs
@@ -56,28 +56,27 @@ class RemoteBatchApp(QtWidgets.QApplication):
 
     def start(self):
         """Start the client application and open the job submission dialog."""
-        print("started")
+        log.debug("started")
         job_dialog(self.path, BatchQueue())
 
 
 @click.command()
 @click.argument("path", default="./", type=click.Path(exists=True))
-def main(path: str):
+@click.option("--verbose", is_flag=True, help="Enable verbose logging")
+def main(path: str, verbose: bool):
     """Start the Remote Batch GUI application to submit jobs.
 
     PATH is the initial directory or file to load. Defaults to current directory.
     """
-    print("in main")
+    if verbose:
+        logging.getLogger().setLevel(logging.DEBUG)
+    log.debug("in main")
     app = RemoteBatchApp(path, sys.argv)
-    print("created remote batch app")
+    log.debug("created remote batch app")
     app.start()
-    try:
-        resultQueue = BatchQueue(job_class=Results)
-        for result in resultQueue.jobs():
-            if result.type != "results":
-                continue
-    except AttributeError:
-        resultQueue = None
+
+    # Run the Qt application loop
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import logging
 import pickle
 import tarfile
 import tempfile
+import typing
 import uuid
 from collections.abc import Generator
 from pathlib import Path
@@ -38,11 +39,11 @@ class Job:
             s3key (object | None, optional): An existing S3 key or LocalKey. Defaults to None.
         """
         self.step = 0
-        self.id: str
-        self.type: str | None
-        self.size: int
-        self._arcpath: str
-        self.next_job: str | None
+        self.id: str = ""
+        self.type: str | None = None
+        self.size: int = 0
+        self._arcpath: str = ""
+        self.next_job: str | None = None
         self.path: str | None = None
         self.jobroot: str | None = None
         self.jobfile: str | None = None
@@ -53,8 +54,8 @@ class Job:
         if s3key:
             metadata = self._get_metadata(s3key)
 
-            self.jobfile = metadata.get("jobfile")
-            self.id = metadata.get("jobid", "unknown")
+            self.jobfile = str(metadata.get("jobfile")) if metadata.get("jobfile") else None
+            self.id = str(metadata.get("jobid", "unknown"))
             if "_" in self.id:
                 parts = self.id.split("_")
                 self.id = parts[0]
@@ -63,15 +64,15 @@ class Job:
                 else:
                     self.step = 0
 
-            self.type = metadata.get("jobtype")
-            self.next_job = metadata.get("next_job")
+            self.type = str(metadata.get("jobtype")) if metadata.get("jobtype") else None
+            self.next_job = str(metadata.get("next_job")) if metadata.get("next_job") else None
 
             if hasattr(s3key, "content_length"):
-                self.size = s3key.content_length
+                self.size = int(getattr(s3key, "content_length", 0))
             else:
                 self.size = 0
 
-            self._arcpath = metadata.get("arcpath", "")
+            self._arcpath = str(metadata.get("arcpath", ""))
             if not self._arcpath:
                 if self.type == "results":
                     self._arcpath = "output"
@@ -96,11 +97,13 @@ class Job:
             dict[str, object]: The extracted metadata dictionary.
         """
         if hasattr(key, "metadata"):
-            return key.metadata
+            return key.metadata  # type: ignore
         if hasattr(key, "load"):
             with contextlib.suppress(Exception):
-                key.load()
-                return key.metadata
+                load_fn = key.load  # type: ignore
+                if callable(load_fn):
+                    load_fn()
+                    return getattr(key, "metadata", {})  # type: ignore
         return {}
 
     def __str__(self) -> str:
@@ -140,7 +143,9 @@ class Job:
         tmpTar = io.BytesIO()
 
         if self._key and hasattr(self._key, "download_fileobj"):
-            self._key.download_fileobj(tmpTar)
+            dl_fn = self._key.download_fileobj  # type: ignore
+            if callable(dl_fn):
+                dl_fn(tmpTar)
 
         tmpTar.seek(0)
 
@@ -171,7 +176,7 @@ class Job:
             self.jobroot = str(Path(self.path) / self._arcpath)
             return self.jobroot
 
-    def mark_complete(self, next_job: "Job | None" = None) -> None:
+    def mark_complete(self, next_job: "Job | Results | None" = None) -> None:
         """Mark the job as complete and link the next step if applicable.
 
         Args:
@@ -191,7 +196,9 @@ class Job:
     def delete(self) -> None:
         """Delete the job from the storage queue."""
         if self._key and hasattr(self._key, "delete"):
-            self._key.delete()
+            del_fn = self._key.delete  # type: ignore
+            if callable(del_fn):
+                del_fn()
 
     def store_in_key(self, s3key: object) -> None:
         """Serialize the job payload and upload it to the storage queue.
@@ -210,9 +217,13 @@ class Job:
 
         if hasattr(s3key, "put"):
             with Path(bundleFile).open("rb") as data:
-                s3key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
+                put_fn = s3key.put  # type: ignore
+                if callable(put_fn):
+                    put_fn(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
         elif hasattr(s3key, "upload_file"):
-            s3key.upload_file(bundleFile, ExtraArgs={"Metadata": {k: str(v) for k, v in metadata.items()}})
+            up_fn = s3key.upload_file  # type: ignore
+            if callable(up_fn):
+                up_fn(bundleFile, ExtraArgs={"Metadata": {k: str(v) for k, v in metadata.items()}})
 
         self._key = s3key
         Path(bundleFile).unlink()
@@ -258,11 +269,13 @@ class Job:
 
 class QueuedJob(Job):
     """A standard Job stored in the processing queue."""
+
     pass
 
 
 class BatchJob(Job):
     """A Job executed as part of a batch process."""
+
     pass
 
 
@@ -364,7 +377,7 @@ class Results:
         Args:
             key (object): The storage key to upload to.
         """
-        print(f"Storing results for job {self.id} in {key}")
+        log.debug(f"Storing results for job {self.id} in {key}")
         bundleFile = self.mkTar()
 
         metadata = {"jobid": str(self.id), "jobstatus": str(self.status)}
@@ -377,7 +390,9 @@ class Results:
 
         if hasattr(key, "put"):
             with Path(bundleFile).open("rb") as data:
-                key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
+                put_fn = key.put  # type: ignore
+                if callable(put_fn):
+                    put_fn(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
 
         Path(bundleFile).unlink()
 
@@ -416,15 +431,17 @@ class BatchQueue:
             self.bucket = self.s3.Bucket(bucket)
         return True
 
-    def queue_job(self, job: Job) -> None:
+    def queue_job(self, job: "Job | Results") -> None:
         """Upload and add a job to the remote queue.
 
         Args:
             job (Job): The job object to queue.
         """
         if self.bucket:
-            key = self.bucket.Object(job.id)
-            job.store_in_key(key)
+            obj_fn = getattr(self.bucket, "Object", None)
+            if callable(obj_fn):
+                key = obj_fn(job.id)
+                job.store_in_key(key)
 
     def jobs(self) -> Generator[Job]:
         """Yield unhandled jobs from the remote queue.
@@ -438,18 +455,29 @@ class BatchQueue:
         emptyBucket = False
         while not emptyBucket:
             emptyBucket = True
-            for obj in self.bucket.objects.all():
-                if obj.key not in self.openJobs:
-                    full_obj = self.bucket.Object(obj.key)
-                    try:
-                        full_obj.load()
-                    except Exception:
-                        continue
+            objects_attr = getattr(self.bucket, "objects", None)
+            if objects_attr and hasattr(objects_attr, "all"):
+                all_fn = objects_attr.all
+                if callable(all_fn):
+                    items = all_fn()
+                    if isinstance(items, typing.Iterable):
+                        for obj in items:
+                            key_attr = getattr(obj, "key", None)
+                            if key_attr and key_attr not in self.openJobs:
+                                obj_fn = getattr(self.bucket, "Object", None)
+                                if callable(obj_fn):
+                                    full_obj = obj_fn(key_attr)
+                                    try:
+                                        load_fn = getattr(full_obj, "load", None)
+                                        if callable(load_fn):
+                                            load_fn()
+                                    except Exception:
+                                        continue
 
-                    job = self.job_class(s3key=full_obj)
-                    self.openJobs[obj.key] = True
-                    emptyBucket = False
-                    yield job
+                                    job = self.job_class(s3key=full_obj)
+                                    self.openJobs[key_attr] = True
+                                    emptyBucket = False
+                                    yield job
 
     def allJobs(self) -> list[Job]:
         """Retrieve all jobs currently present in the queue.
@@ -460,14 +488,28 @@ class BatchQueue:
         if not self.bucket:
             return []
 
-        jobs = []
-        for obj in self.bucket.objects.all():
-            full_obj = self.bucket.Object(obj.key)
-            try:
-                full_obj.load()
-            except Exception:
-                continue
-            jobs.append(self.job_class(s3key=full_obj))
+        jobs: list[Job] = []
+        objects_attr = getattr(self.bucket, "objects", None)
+        if objects_attr and hasattr(objects_attr, "all"):
+            all_fn = objects_attr.all
+            if callable(all_fn):
+                items = all_fn()
+                if isinstance(items, typing.Iterable):
+                    for obj in items:
+                        key_attr = getattr(obj, "key", None)
+                        if key_attr:
+                            obj_fn = getattr(self.bucket, "Object", None)
+                            if callable(obj_fn):
+                                full_obj = obj_fn(key_attr)
+                                success = True
+                                try:
+                                    load_fn = getattr(full_obj, "load", None)
+                                    if callable(load_fn):
+                                        load_fn()
+                                except Exception:
+                                    success = False
+                                if success:
+                                    jobs.append(self.job_class(s3key=full_obj))
         return jobs
 
     def delete(self, job: Job) -> None:
@@ -547,16 +589,18 @@ class ClientQueue(BatchQueue):
             self.cached_remote_jobs = super().allJobs()
         return self.cached_remote_jobs
 
-    def queue_job(self, job: Job) -> None:
+    def queue_job(self, job: "Job | Results") -> None:
         """Add a job to the queue, caching it locally if offline.
 
         Args:
             job (Job): The job to queue.
         """
         if self.isConnected and self.bucket:
-            key = self.bucket.Object(f"{job.id}_{job.type}")
-            job.store_in_key(key)
-        else:
+            obj_fn = getattr(self.bucket, "Object", None)
+            if callable(obj_fn):
+                key = obj_fn(f"{job.id}_{job.type}")
+                job.store_in_key(key)
+        elif isinstance(job, Job):
             self.local_jobs.append(job)
 
     def allJobs(self) -> list[Job]:
@@ -568,11 +612,11 @@ class ClientQueue(BatchQueue):
         if not self.isConnected:
             try:
                 if self.connect():
-                    print("running in connected mode.")
+                    log.debug("running in connected mode.")
                 else:
-                    print("no connection")
+                    log.debug("no connection")
             except Exception as e:
-                print(f"{type(e)} {e} Failed to create/get s3 bucket, running local only.")
+                log.debug(f"{type(e)} {e} Failed to create/get s3 bucket, running local only.")
         return self.local_jobs + self.remote_jobs
 
     def save(self) -> None:
@@ -647,9 +691,17 @@ class LocalKey:
         """
         with self.data_path.open("wb") as f:
             if hasattr(Body, "read"):
-                f.write(Body.read())
-            else:
-                f.write(Body)  # type: ignore
+                read_fn = Body.read  # type: ignore
+                if callable(read_fn):
+                    res = read_fn()
+                    if isinstance(res, bytes | bytearray | memoryview):
+                        f.write(res)
+                    elif isinstance(res, str):
+                        f.write(res.encode())
+            elif isinstance(Body, bytes | bytearray | memoryview):
+                f.write(Body)
+            elif isinstance(Body, str):
+                f.write(Body.encode())
         if Metadata:
             with self.meta_path.open("wb") as f:
                 pickle.dump(Metadata, f)
@@ -677,7 +729,9 @@ class LocalKey:
             fileobj (object): The file-like object to write to.
         """
         with self.data_path.open("rb") as f:
-            fileobj.write(f.read())
+            write_fn = getattr(fileobj, "write", None)
+            if callable(write_fn):
+                write_fn(f.read())
 
 
 class LocalQueue(BatchQueue):
@@ -711,14 +765,15 @@ class LocalQueue(BatchQueue):
         """
         return True
 
-    def queue_job(self, job: Job) -> None:
+    def queue_job(self, job: "Job | Results") -> None:
         """Store a job locally in the simulated queue directory.
 
         Args:
             job (Job): The job to store.
         """
-        key = LocalKey(str(self.root_path), job.id)
-        job.store_in_key(key)
+        if job.id:
+            key = LocalKey(str(self.root_path), str(job.id))
+            job.store_in_key(key)
 
     def jobs(self) -> Generator[Job]:
         """Yield unhandled jobs from the local queue directory.
