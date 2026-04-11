@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.13", "3.14-dev"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        allow-prereleases: true
+
+    - name: Install system dependencies for PyQt6
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1 libegl1 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2t64 libxi6 libxtst6 qt6-base-dev qt6-wayland
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e ".[dev]"
+
+    - name: Lint with Ruff
+      run: |
+        ruff check .
+
+    - name: Type check with Pyright
+      run: |
+        pyright
+
+    - name: Check Markdown formatting
+      run: |
+        mdformat --check .
+
+    - name: Run tests with coverage
+      run: |
+        xvfb-run -a pytest
