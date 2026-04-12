@@ -2,6 +2,8 @@
 
 """Module containing the TabDialog and its constituent tabs for Job details."""
 
+import click
+
 #############################################################################
 ##
 ## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
@@ -24,7 +26,6 @@
 ## WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 ##
 #############################################################################
-
 from PyQt6 import QtCore, QtWidgets
 
 
@@ -203,14 +204,19 @@ class ApplicationsTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
 
-if __name__ == "__main__":
+@click.command()
+@click.argument("filename", default=".")
+def main(filename: str):
+    """Run the tab dialog application.
+
+    FILENAME is the path to open. Defaults to current directory.
+    """
     import sys
 
-    ARGS_MIN_LENGTH = 2
-
-    app = QtWidgets.QApplication(sys.argv)
-
-    fileName = sys.argv[1] if len(sys.argv) >= ARGS_MIN_LENGTH else "."
-
-    tabdialog = TabDialog(fileName)
+    _ = QtWidgets.QApplication(sys.argv)
+    tabdialog = TabDialog(filename)
     sys.exit(tabdialog.exec())
+
+
+if __name__ == "__main__":
+    main()
