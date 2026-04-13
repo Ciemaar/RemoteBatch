@@ -71,7 +71,9 @@ def main(path: str, verbose: bool):
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     log.debug("in main")
-    app = RemoteBatchApp(path, sys.argv)
+    # Tell PyQt to ignore the arguments parsed by click, to prevent conflicts.
+    # We pass only sys.argv[0] to PyQt so it doesn't try to parse click's args.
+    app = RemoteBatchApp(path, [sys.argv[0]])
     log.debug("created remote batch app")
     app.start()
 

@@ -48,7 +48,8 @@ def main(verbose: bool):
     if verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     log.debug("in main")
-    app = RemoteMgrApp(sys.argv)
+    # Tell PyQt to ignore the arguments parsed by click, to prevent conflicts.
+    app = RemoteMgrApp([sys.argv[0]])
     log.debug("created remote batch app")
     app.start()
     sys.exit(app.exec())

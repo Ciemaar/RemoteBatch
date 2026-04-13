@@ -213,7 +213,7 @@ def main(filename: str):
     """
     import sys
 
-    _ = QtWidgets.QApplication(sys.argv)
+    _ = QtWidgets.QApplication([sys.argv[0]])
     tabdialog = TabDialog(filename)
     sys.exit(tabdialog.exec())
 
