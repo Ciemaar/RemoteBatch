@@ -96,3 +96,54 @@ def test_results_lifecycle(local_queue):
     key_loaded = LocalKey(local_queue.root_path, "res-1")
     assert key_loaded.metadata.get("jobid") == "res-1"
     assert key_loaded.metadata.get("jobstatus") == "success"
+
+
+def test_results_jobroot():
+    """Test that Results type generates correctly assigned defaults."""
+    res = Results("test_id", "my_path", 0)
+    assert res.id == "test_id"
+    assert res.type == "results"
+    assert res.path == "my_path"
+
+
+def test_job_metadata(mocker):
+    """Test that Job properly extracts metadata from s3key."""
+    from remotebatch.model import Job
+
+    mock_s3key = mocker.MagicMock()
+    mock_s3key.metadata = {"jobid": "123_5", "jobtype": "povray", "jobfile": "test.ini"}
+    mock_s3key.content_length = 500
+
+    j = Job(s3key=mock_s3key)
+
+    assert j.id == "123"
+    assert j.step == 5
+    assert j.type == "povray"
+    assert j.jobfile == "test.ini"
+    assert j.size == 500
+
+
+def test_job_tarball_handling(mocker):
+    """Test job tarball serialization and file gathering."""
+    from remotebatch.model import Job
+
+    j = Job("test.ini")
+    j.id = "myid123"
+    j.type = "povray"
+
+    mock_tar = mocker.patch("remotebatch.model.tarfile.open")
+    j.mkTar()
+    mock_tar.assert_called_once()
+    mock_tar.return_value.__enter__.return_value.add.assert_called()
+
+
+def test_results_mktar(mocker):
+    """Test mkTar for results type specifically checks the path."""
+    from remotebatch.model import Results
+
+    res = Results("123", "some_path", 0)
+    mock_tar = mocker.patch("remotebatch.model.tarfile.open")
+    res.mkTar()
+    mock_tar.assert_called_once()
+    # the add method should be called on the path itself
+    mock_tar.return_value.__enter__.return_value.add.assert_called_with("some_path", arcname="output", recursive=True)

@@ -120,8 +120,13 @@ class ManagerMain(QtWidgets.QMainWindow):
     def refilter(self):
         """Filter the visible jobs based on selected filter action."""
         log.debug("running refilter")
-        for job_item in self.jobs:
-            job = self.jobs[job_item]
+        for i in range(self.jobListBox.count()):
+            job_item = self.jobListBox.item(i)
+            if job_item is None:
+                continue
+            job = self.jobs.get(id(job_item))
+            if job is None:
+                continue
             if self.resultsAct.isChecked() and job.type != "results":
                 job_item.setHidden(True)
             else:
@@ -144,7 +149,7 @@ class ManagerMain(QtWidgets.QMainWindow):
         for job in self.queue.allJobs():
             item_text = f"{job.type}:{job.size} {job.storage}: {str(job)}"
             item = QtWidgets.QListWidgetItem(item_text, self.jobListBox)
-            self.jobs[item] = job
+            self.jobs[id(item)] = job
         self.refilter()
         if self.refreshButton is not None:
             if self.queue.isConnected:
@@ -162,7 +167,9 @@ class ManagerMain(QtWidgets.QMainWindow):
         job_item = self.jobListBox.currentItem()
         if job_item is None:
             return
-        job = self.jobs[job_item]
+        job = self.jobs.get(id(job_item))
+        if job is None:
+            return
         path = QtWidgets.QFileDialog.getExistingDirectory(
             self, "Retrieve to", "~", QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
@@ -183,7 +190,7 @@ class ManagerMain(QtWidgets.QMainWindow):
         item = self.jobListBox.currentItem()
         if not item:
             return
-        job = self.jobs[item]
+        job = self.jobs.get(id(item))
         notify(f"Deleting job: {str(job)}")
         self.queue.delete(job)
         self.jobListBox.takeItem(self.jobListBox.row(item))
