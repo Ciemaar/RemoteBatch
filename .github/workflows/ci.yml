@@ -4,7 +4,6 @@ on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
 
 jobs:
   test:
@@ -22,8 +21,12 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
       - name: Install dependencies
         run: uv pip install tox
+      - name: Install Qt dependencies
+        run: sudo apt-get update && sudo apt-get install -y libxcb-cursor0 libxkbcommon-x11-0 x11-utils xvfb
       - name: Run Tests
-        run: uv run tox -e py$(echo ${{ matrix.python-version }} | tr -d .)
+        run: xvfb-run uv run tox -e py$(echo ${{ matrix.python-version }} | tr -d .)
+        env:
+          QT_QPA_PLATFORM: offscreen
 
   lint:
     runs-on: ubuntu-latest
