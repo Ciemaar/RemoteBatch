@@ -57,13 +57,13 @@ def test_manager_main(qtbot, mocker):
     window.refilter()
 
     # The first item should be hidden
-    assert window.jobListBox.item(0).isHidden()
-    assert not window.jobListBox.item(1).isHidden()
+    assert window.jobListBox.item(0).isHidden()  # type: ignore
+    assert not window.jobListBox.item(1).isHidden()  # type: ignore
 
     # check refresh sets threaded refresh
     mock_runme = mocker.patch("remotebatch.view.RunMe")
     window.refresh()
-    assert window.refreshButton.text() == "Refreshing"
+    assert window.refreshButton.text() == "Refreshing"  # type: ignore
     mock_runme.return_value.start.assert_called_once()
 
 
