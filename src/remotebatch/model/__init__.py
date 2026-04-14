@@ -428,7 +428,9 @@ class BatchQueue:
             return False
         with contextlib.suppress(Exception):
             self.s3 = boto3.resource("s3")
-            self.bucket = self.s3.Bucket(bucket)
+            bucket_fn = getattr(self.s3, "Bucket", None)
+            if callable(bucket_fn):
+                self.bucket = bucket_fn(bucket)
         return True
 
     def queue_job(self, job: "Job | Results") -> None:
