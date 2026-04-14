@@ -151,7 +151,7 @@ def test_processJob_povray(mocker):
 
     mock_subprocess = mocker.patch("remotebatch.server.subprocess.call", return_value=0)
     mock_results = mocker.patch("remotebatch.server.Results")
-    mocker.patch("remotebatch.server.Path.mkdir")
+    mocker.patch("remotebatch.server.Path")
 
     result = processJob(mock_job)
 
