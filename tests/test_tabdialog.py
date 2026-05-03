@@ -16,13 +16,12 @@ def test_tabdialog(qtbot, mocker):
 
 def test_tabdialog_cli(qtbot, mocker):
     """Test the CLI for tabdialog."""
-    from click.testing import CliRunner
     from remotebatch.tabdialog import main
 
-    runner = CliRunner()
     mocker.patch("remotebatch.tabdialog.QtWidgets.QApplication")
     mocker.patch("remotebatch.tabdialog.TabDialog.exec", return_value=0)
     mocker.patch("sys.exit")
+    mocker.patch("sys.argv", ["tabdialog", "test.ini"])
 
-    result = runner.invoke(main, ["test.ini"])
-    assert result.exit_code == 0
+    # We replaced click with argparse in the PR feedback, so we just call main directly
+    main()

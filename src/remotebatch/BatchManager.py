@@ -4,7 +4,6 @@ import logging
 import sys
 from pathlib import Path
 
-import click
 from PyQt6 import QtWidgets
 from remotebatch.controller import mgr_main
 from remotebatch.model import ClientQueue
@@ -41,15 +40,17 @@ class RemoteMgrApp(QtWidgets.QApplication):
         self.queue.save()
 
 
-@click.command()
-@click.option("--verbose", is_flag=True, help="Enable verbose logging")
-def main(verbose: bool):
+def main():
     """Start the Remote Batch Manager application."""
-    if verbose:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Start the Remote Batch Manager application.")
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    args, unknown = parser.parse_known_args()
+    if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
     log.debug("in main")
-    # Tell PyQt to ignore the arguments parsed by click, to prevent conflicts.
-    app = RemoteMgrApp([sys.argv[0]])
+    app = RemoteMgrApp(sys.argv)
     log.debug("created remote batch app")
     app.start()
     sys.exit(app.exec())

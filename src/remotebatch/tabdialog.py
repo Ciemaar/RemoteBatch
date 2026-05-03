@@ -2,8 +2,6 @@
 
 """Module containing the TabDialog and its constituent tabs for Job details."""
 
-import click
-
 #############################################################################
 ##
 ## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
@@ -204,17 +202,17 @@ class ApplicationsTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
 
-@click.command()
-@click.argument("filename", default=".")
-def main(filename: str):
-    """Run the tab dialog application.
-
-    FILENAME is the path to open. Defaults to current directory.
-    """
+def main():
+    """Run the tab dialog application."""
+    import argparse
     import sys
 
-    _ = QtWidgets.QApplication([sys.argv[0]])
-    tabdialog = TabDialog(filename)
+    parser = argparse.ArgumentParser(description="Run the tab dialog application.")
+    parser.add_argument("filename", nargs="?", default=".", help="The path to open. Defaults to current directory.")
+    args, unknown = parser.parse_known_args()
+
+    _ = QtWidgets.QApplication(sys.argv)
+    tabdialog = TabDialog(args.filename)
     sys.exit(tabdialog.exec())
 
 

@@ -29,7 +29,6 @@ import logging
 import sys
 from pathlib import Path
 
-import click
 from PyQt6 import QtWidgets
 from remotebatch.controller import job_dialog
 from remotebatch.model import BatchQueue
@@ -60,20 +59,24 @@ class RemoteBatchApp(QtWidgets.QApplication):
         job_dialog(self.path, BatchQueue())
 
 
-@click.command()
-@click.argument("path", default="./", type=click.Path(exists=True))
-@click.option("--verbose", is_flag=True, help="Enable verbose logging")
-def main(path: str, verbose: bool):
-    """Start the Remote Batch GUI application to submit jobs.
+def main():
+    """Start the Remote Batch GUI application to submit jobs."""
+    import argparse
 
-    PATH is the initial directory or file to load. Defaults to current directory.
-    """
-    if verbose:
+    parser = argparse.ArgumentParser(description="Start the Remote Batch GUI application to submit jobs.")
+    parser.add_argument(
+        "path", nargs="?", default="./", help="The initial directory or file to load. Defaults to current directory."
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+
+    args, unknown = parser.parse_known_args()
+
+    if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
+
     log.debug("in main")
-    # Tell PyQt to ignore the arguments parsed by click, to prevent conflicts.
-    # We pass only sys.argv[0] to PyQt so it doesn't try to parse click's args.
-    app = RemoteBatchApp(path, [sys.argv[0]])
+    # Pass sys.argv back so Qt can parse the flags it cares about
+    app = RemoteBatchApp(args.path, sys.argv)
     log.debug("created remote batch app")
     app.start()
 

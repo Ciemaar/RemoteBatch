@@ -64,7 +64,7 @@ organizational repositories.
   configurations.
 - **CLI Framework**: You must mandate `click` for CLIs and you must prohibit
   `argparse`. You must also require a `--verbose` flag that sets logging to
-  `DEBUG`.
+  `DEBUG`. However, do not use `click` to handle arguments for PyQt5/6 desktop applications, let PyQt handle parsing natively.
 
 ## 2. Python Syntax & Types
 
