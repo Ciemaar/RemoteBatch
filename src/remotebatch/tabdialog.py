@@ -24,6 +24,9 @@
 ## WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 ##
 #############################################################################
+import argparse
+import sys
+
 from PyQt6 import QtCore, QtWidgets
 
 
@@ -204,9 +207,6 @@ class ApplicationsTab(QtWidgets.QWidget):
 
 def main():
     """Run the tab dialog application."""
-    import argparse
-    import sys
-
     parser = argparse.ArgumentParser(description="Run the tab dialog application.")
     parser.add_argument("filename", nargs="?", default=".", help="The path to open. Defaults to current directory.")
     args, unknown = parser.parse_known_args()

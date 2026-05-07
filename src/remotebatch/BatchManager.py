@@ -1,5 +1,6 @@
 """Entry point for the Batch Manager GUI application."""
 
+import argparse
 import logging
 import sys
 from pathlib import Path
@@ -42,8 +43,6 @@ class RemoteMgrApp(QtWidgets.QApplication):
 
 def main():
     """Start the Remote Batch Manager application."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Start the Remote Batch Manager application.")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     args, unknown = parser.parse_known_args()

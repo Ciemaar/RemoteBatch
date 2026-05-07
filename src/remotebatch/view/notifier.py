@@ -16,7 +16,7 @@ try:
             title (str, optional): The title of the notification. Defaults to "Remoted Batch".
         """
         note = osso.Context().get_system_note()
-        note.system_note_infolog.debug(message)
+        note.system_note_infoprint(message)
 
 except Exception:
 

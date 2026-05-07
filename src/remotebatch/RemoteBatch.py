@@ -2,8 +2,6 @@
 
 """Main entry point for the Remote Batch client application."""
 
-import logging
-
 #############################################################################
 ##
 ## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
@@ -26,6 +24,8 @@ import logging
 ## WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 ##
 #############################################################################
+import argparse
+import logging
 import sys
 from pathlib import Path
 
@@ -61,8 +61,6 @@ class RemoteBatchApp(QtWidgets.QApplication):
 
 def main():
     """Start the Remote Batch GUI application to submit jobs."""
-    import argparse
-
     parser = argparse.ArgumentParser(description="Start the Remote Batch GUI application to submit jobs.")
     parser.add_argument(
         "path", nargs="?", default="./", help="The initial directory or file to load. Defaults to current directory."
