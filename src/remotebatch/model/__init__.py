@@ -435,7 +435,7 @@ class BatchQueue:
             # dynamically generated boto3 object
             bucket_fn = getattr(self.s3, "Bucket", None)
             if callable(bucket_fn):
-                self.bucket = bucket_fn(bucket)
+                self.bucket = typing.cast(typing.Callable[..., typing.Any], bucket_fn)(bucket)
         return True
 
     def queue_job(self, job: "Job | Results") -> None:
@@ -477,7 +477,7 @@ class BatchQueue:
                                 # dynamically generated boto3 object
                                 obj_fn = getattr(self.bucket, "Object", None)
                                 if callable(obj_fn):
-                                    full_obj = obj_fn(key_attr)
+                                    full_obj = typing.cast(typing.Callable[..., typing.Any], obj_fn)(key_attr)
                                     try:
                                         # dynamically generated boto3 object
                                         load_fn = getattr(full_obj, "load", None)
@@ -611,7 +611,7 @@ class ClientQueue(BatchQueue):
             # dynamically generated boto3 object
             obj_fn = getattr(self.bucket, "Object", None)
             if callable(obj_fn):
-                key = obj_fn(f"{job.id}_{job.type}")
+                key = typing.cast(typing.Callable[..., typing.Any], obj_fn)(f"{job.id}_{job.type}")
                 job.store_in_key(key)
         elif isinstance(job, Job):
             self.local_jobs.append(job)
