@@ -2,48 +2,43 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main]
   pull_request:
-    branches: [ main, master ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.13", "3.14-dev"]
-
+        python-version: ["3.12", "3.13", "3.14"]
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.6"
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv tool install tox
+      - name: Install Qt dependencies
+        run: sudo apt-get update && sudo apt-get install -y libxcb-cursor0 libxkbcommon-x11-0 x11-utils xvfb libegl1 libgl1
+      - name: Run Tests
+        run: xvfb-run tox -e py$(echo ${{ matrix.python-version }} | tr -d .)
+        env:
+          QT_QPA_PLATFORM: offscreen
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        allow-prereleases: true
-
-    - name: Install system dependencies for PyQt6
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgl1 libegl1 libxrandr2 libxss1 libxcursor1 libxcomposite1 libasound2t64 libxi6 libxtst6 qt6-base-dev qt6-wayland
-
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-
-    - name: Lint with Ruff
-      run: |
-        ruff check .
-
-    - name: Type check with Pyright
-      run: |
-        pyright
-
-    - name: Check Markdown formatting
-      run: |
-        mdformat --check .
-
-    - name: Run tests with coverage
-      run: |
-        xvfb-run -a pytest
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.11.6"
+      - name: Install dependencies
+        run: uv venv && source .venv/bin/activate && uv pip install -e .[dev]
+      - name: Run pre-commit
+        run: source .venv/bin/activate && pre-commit run --all-files
+      - name: Run pyright
+        run: source .venv/bin/activate && uv run pyright

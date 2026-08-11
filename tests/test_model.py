@@ -5,7 +5,6 @@ import shutil
 import tempfile
 
 import pytest
-
 from remotebatch.model import Job, LocalKey, LocalQueue, Results
 
 
@@ -55,15 +54,15 @@ def test_job_lifecycle(local_queue):
         # Retrieve files
         retrieve_path = tempfile.mkdtemp()
         try:
-             found_job.getFiles(to=retrieve_path)
-             # Check if jobfile exists in retrieved path
-             expected_file = os.path.join(retrieve_path, job_name)
-             assert os.path.exists(expected_file)
-             with open(expected_file) as f:
-                 assert f.read() == "test content"
+            found_job.getFiles(to=retrieve_path)
+            # Check if jobfile exists in retrieved path
+            expected_file = os.path.join(retrieve_path, job_name)
+            assert os.path.exists(expected_file)
+            with open(expected_file) as f:
+                assert f.read() == "test content"
 
         finally:
-             shutil.rmtree(retrieve_path)
+            shutil.rmtree(retrieve_path)
 
         # Delete job
         local_queue.delete(found_job)
@@ -81,13 +80,13 @@ def test_results_lifecycle(local_queue):
 
     # Mock a path for results
     with tempfile.TemporaryDirectory() as temp_dir:
-         with open(os.path.join(temp_dir, "output.txt"), "w") as f:
-             f.write("result data")
-         results.path = temp_dir
+        with open(os.path.join(temp_dir, "output.txt"), "w") as f:
+            f.write("result data")
+        results.path = temp_dir
 
-         # Store results using a key from local queue
-         key = LocalKey(local_queue.root_path, "res-1")
-         results.store_in_key(key)
+        # Store results using a key from local queue
+        key = LocalKey(local_queue.root_path, "res-1")
+        results.store_in_key(key)
 
     # Verify results are stored
     assert os.path.exists(os.path.join(local_queue.root_path, "res-1"))
@@ -97,3 +96,54 @@ def test_results_lifecycle(local_queue):
     key_loaded = LocalKey(local_queue.root_path, "res-1")
     assert key_loaded.metadata.get("jobid") == "res-1"
     assert key_loaded.metadata.get("jobstatus") == "success"
+
+
+def test_results_jobroot():
+    """Test that Results type generates correctly assigned defaults."""
+    res = Results("test_id", "my_path", 0)
+    assert res.id == "test_id"
+    assert res.type == "results"
+    assert res.path == "my_path"
+
+
+def test_job_metadata(mocker):
+    """Test that Job properly extracts metadata from s3key."""
+    from remotebatch.model import Job
+
+    mock_s3key = mocker.MagicMock()
+    mock_s3key.metadata = {"jobid": "123_5", "jobtype": "povray", "jobfile": "test.ini"}
+    mock_s3key.content_length = 500
+
+    j = Job(s3key=mock_s3key)
+
+    assert j.id == "123"
+    assert j.step == 5
+    assert j.type == "povray"
+    assert j.jobfile == "test.ini"
+    assert j.size == 500
+
+
+def test_job_tarball_handling(mocker):
+    """Test job tarball serialization and file gathering."""
+    from remotebatch.model import Job
+
+    j = Job("test.ini")
+    j.id = "myid123"
+    j.type = "povray"
+
+    mock_tar = mocker.patch("remotebatch.model.tarfile.open")
+    j.mkTar()
+    mock_tar.assert_called_once()
+    mock_tar.return_value.__enter__.return_value.add.assert_called()
+
+
+def test_results_mktar(mocker):
+    """Test mkTar for results type specifically checks the path."""
+    from remotebatch.model import Results
+
+    res = Results("123", "some_path", 0)
+    mock_tar = mocker.patch("remotebatch.model.tarfile.open")
+    res.mkTar()
+    mock_tar.assert_called_once()
+    # the add method should be called on the path itself
+    mock_tar.return_value.__enter__.return_value.add.assert_called_with("some_path", arcname="output", recursive=True)
