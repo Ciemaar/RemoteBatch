@@ -258,11 +258,13 @@ class Job:
 
 class QueuedJob(Job):
     """A standard Job stored in the processing queue."""
+
     pass
 
 
 class BatchJob(Job):
     """A Job executed as part of a batch process."""
+
     pass
 
 

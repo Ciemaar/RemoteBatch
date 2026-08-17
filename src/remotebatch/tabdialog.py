@@ -205,14 +205,12 @@ class ApplicationsTab(QtWidgets.QWidget):
 
 if __name__ == "__main__":
     import sys
+
     ARGS_MIN_LENGTH = 2
 
     app = QtWidgets.QApplication(sys.argv)
 
-    if len(sys.argv) >= ARGS_MIN_LENGTH:
-        fileName = sys.argv[1]
-    else:
-        fileName = "."
+    fileName = sys.argv[1] if len(sys.argv) >= ARGS_MIN_LENGTH else "."
 
     tabdialog = TabDialog(fileName)
     sys.exit(tabdialog.exec())
