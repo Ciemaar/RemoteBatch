@@ -7,7 +7,6 @@ from pathlib import Path
 
 import click
 from PyQt6 import QtWidgets
-
 from remotebatch.controller import job_dialog
 from remotebatch.model import BatchQueue, Results
 
