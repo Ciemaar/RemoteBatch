@@ -1,5 +1,5 @@
-"""Model package containing core Queue and Job logic."""
 
+"""Model package containing core Queue and Job logic."""
 import contextlib
 import io
 import logging
@@ -9,6 +9,7 @@ import tempfile
 import uuid
 from collections.abc import Generator
 from pathlib import Path
+from typing import Any
 
 # Try to import boto3, but allow it to fail if we are just testing local queue
 try:
@@ -29,7 +30,7 @@ class Job:
     into a tarball format for storage in a queue.
     """
 
-    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: object | None = None) -> None:
+    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: Any | None = None) -> None:
         """Initialize a Job.
 
         Args:
@@ -46,7 +47,7 @@ class Job:
         self.path: str | None = None
         self.jobroot: str | None = None
         self.jobfile: str | None = None
-        self._key: object | None = s3key
+        self._key: Any | None = s3key
         self.jobpath: str | None = None
         self.status: str | None = None
 
@@ -86,14 +87,14 @@ class Job:
             self._arcpath = "jobroot"
             self.next_job = None
 
-    def _get_metadata(self, key: object) -> dict[str, object]:
+    def _get_metadata(self, key: Any) -> dict[str, Any]:
         """Extract metadata from an S3 key or LocalKey.
 
         Args:
             key (object): The storage key object.
 
         Returns:
-            dict[str, object]: The extracted metadata dictionary.
+            dict[str, Any]: The extracted metadata dictionary.
         """
         if hasattr(key, "metadata"):
             return key.metadata
@@ -193,7 +194,7 @@ class Job:
         if self._key and hasattr(self._key, "delete"):
             self._key.delete()
 
-    def store_in_key(self, s3key: object) -> None:
+    def store_in_key(self, s3key: Any) -> None:
         """Serialize the job payload and upload it to the storage queue.
 
         Args:
@@ -272,7 +273,7 @@ class ClientJob(Job):
     Handles actions that are pending execution when offline.
     """
 
-    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: object | None = None) -> None:
+    def __init__(self, jobfile_or_path: str = "./", jobfile: str | None = None, s3key: Any | None = None) -> None:
         """Initialize a ClientJob.
 
         Args:
@@ -283,11 +284,11 @@ class ClientJob(Job):
         super().__init__(jobfile_or_path, jobfile, s3key)
         self.pending_actions: set[str] = set()
 
-    def __getstate__(self) -> dict[str, object]:
+    def __getstate__(self) -> dict[str, Any]:
         """Serialize state, excluding non-pickleable attributes like the storage key.
 
         Returns:
-            dict[str, object]: The object state for serialization.
+            dict[str, Any]: The object state for serialization.
         """
         ret = dict(self.__dict__)
         if "_key" in ret:
@@ -316,8 +317,8 @@ class Results:
         self,
         job_id: str | None = None,
         path: str | None = None,
-        status: object | None = None,
-        s3key: object | None = None,
+        status: Any | None = None,
+        s3key: Any | None = None,
     ) -> None:
         """Initialize the Results object.
 
@@ -358,7 +359,7 @@ class Results:
                 tfile.add(self.path, arcname=self._arcpath, recursive=True)
         return str(filename)
 
-    def store_in_key(self, key: object) -> None:
+    def store_in_key(self, key: Any) -> None:
         """Upload the results tarball and metadata to the queue storage.
 
         Args:
@@ -385,7 +386,7 @@ class Results:
 class BatchQueue:
     """Manages interactions with a remote processing queue (e.g., AWS S3)."""
 
-    def __init__(self, bucket: str = REMOTE_BATCH_BUCKET, job_class: type[Job] = QueuedJob) -> None:
+    def __init__(self, bucket: str = REMOTE_BATCH_BUCKET, job_class: type[Job] | type[Results] = QueuedJob) -> None:
         """Initialize the BatchQueue.
 
         Args:
@@ -395,8 +396,8 @@ class BatchQueue:
         self.openJobs: dict[str, bool] = {}
         self.job_class = job_class
         self.bucket_name = bucket
-        self.s3: object | None = None
-        self.bucket: object | None = None
+        self.s3: Any | None = None
+        self.bucket: Any | None = None
         if boto3:
             self.connect(bucket)
 
@@ -413,7 +414,8 @@ class BatchQueue:
             return False
         with contextlib.suppress(Exception):
             self.s3 = boto3.resource("s3")
-            self.bucket = self.s3.Bucket(bucket)
+            if self.s3 is not None:
+                self.bucket = self.s3.Bucket(bucket)
         return True
 
     def queue_job(self, job: Job) -> None:
@@ -426,7 +428,7 @@ class BatchQueue:
             key = self.bucket.Object(job.id)
             job.store_in_key(key)
 
-    def jobs(self) -> Generator[Job]:
+    def jobs(self) -> Generator[Job | Results]:
         """Yield unhandled jobs from the remote queue.
 
         Yields:
@@ -451,7 +453,7 @@ class BatchQueue:
                     emptyBucket = False
                     yield job
 
-    def allJobs(self) -> list[Job]:
+    def allJobs(self) -> list[Job | Results]:
         """Retrieve all jobs currently present in the queue.
 
         Returns:
@@ -501,11 +503,11 @@ class ClientQueue(BatchQueue):
             check_network (object, optional): Verify network connectivity. Defaults to always returning True.
         """
         self.openJobs: dict[str, bool] = {}
-        self.local_jobs: list[Job] = []
-        self.cached_remote_jobs: list[Job] = []
+        self.local_jobs: list[Job | Results] = []
+        self.cached_remote_jobs: list[Job | Results] = []
         self.local_path = Path(local_path)
         self.job_class = job_class
-        self.bucket: object | None = None
+        self.bucket: Any | None = None
         self.bucket_name = bucket
         self.check_network = check_network
         self.s3 = None
@@ -537,7 +539,7 @@ class ClientQueue(BatchQueue):
         return self.bucket is not None
 
     @property
-    def remote_jobs(self) -> list[Job]:
+    def remote_jobs(self) -> list[Job | Results]:
         """Fetch the jobs from the remote queue and cache them.
 
         Returns:
@@ -559,7 +561,7 @@ class ClientQueue(BatchQueue):
         else:
             self.local_jobs.append(job)
 
-    def allJobs(self) -> list[Job]:
+    def allJobs(self) -> list[Job | Results]:
         """Retrieve a combined list of local and remote jobs.
 
         Returns:
@@ -625,7 +627,7 @@ class LocalKey:
         self.key = key
         self.data_path = self.root / key
         self.meta_path = self.root / f"{key}.meta"
-        self.metadata: dict[str, object] = {}
+        self.metadata: dict[str, Any] = {}
         self.bucket_name = "local"
         self.content_length = 0
         self.load()
@@ -638,12 +640,12 @@ class LocalKey:
         """
         return self.data_path.exists()
 
-    def put(self, Body: object, Metadata: dict[str, object] | None = None) -> None:
+    def put(self, Body: Any, Metadata: dict[str, Any] | None = None) -> None:
         """Simulate uploading data to S3.
 
         Args:
             Body (object): The file content.
-            Metadata (dict[str, object] | None, optional): The associated metadata. Defaults to None.
+            Metadata (dict[str, Any] | None, optional): The associated metadata. Defaults to None.
         """
         with self.data_path.open("wb") as f:
             if hasattr(Body, "read"):
@@ -670,7 +672,7 @@ class LocalKey:
         if self.meta_path.exists():
             self.meta_path.unlink()
 
-    def download_fileobj(self, fileobj: object) -> None:
+    def download_fileobj(self, fileobj: Any) -> None:
         """Download the mocked object content to a file-like object.
 
         Args:
@@ -687,7 +689,7 @@ class LocalQueue(BatchQueue):
     development and unit tests where AWS access is unavailable or undesired.
     """
 
-    def __init__(self, root_path: str = "/tmp/localqueue", job_class: type[Job] = QueuedJob) -> None:
+    def __init__(self, root_path: str = "/tmp/localqueue", job_class: type[Job] | type[Results] = QueuedJob) -> None:
         """Initialize the LocalQueue.
 
         Args:
@@ -698,7 +700,7 @@ class LocalQueue(BatchQueue):
         self.job_class = job_class
         self.root_path.mkdir(parents=True, exist_ok=True)
         self.openJobs: dict[str, bool] = {}
-        self.bucket: object = "local"  # Mock bucket
+        self.bucket: Any = "local"  # Mock bucket
 
     def connect(self, bucket: str = "") -> bool:
         """Simulate connecting to a bucket.
@@ -720,7 +722,7 @@ class LocalQueue(BatchQueue):
         key = LocalKey(str(self.root_path), job.id)
         job.store_in_key(key)
 
-    def jobs(self) -> Generator[Job]:
+    def jobs(self) -> Generator[Job | Results]:
         """Yield unhandled jobs from the local queue directory.
 
         Yields:
@@ -735,7 +737,7 @@ class LocalQueue(BatchQueue):
             if key.exists():
                 yield self.job_class(s3key=key)
 
-    def allJobs(self) -> list[Job]:
+    def allJobs(self) -> list[Job | Results]:
         """Retrieve all jobs in the local queue directory.
 
         Returns:
