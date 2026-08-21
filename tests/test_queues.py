@@ -3,6 +3,8 @@
 from unittest.mock import MagicMock
 
 import pytest
+
+from remotebatch import model
 from remotebatch.model import BatchQueue, ClientQueue, Job
 
 
@@ -16,8 +18,6 @@ def mock_boto3(mocker):
     mock_s3.Bucket.return_value = mock_bucket
 
     # We must patch the boto3 imported at the top of model/__init__ too
-    from remotebatch import model
-
     model.boto3 = mock_boto
 
     return mock_boto, mock_bucket
