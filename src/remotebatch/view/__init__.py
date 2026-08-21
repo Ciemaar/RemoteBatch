@@ -147,9 +147,9 @@ class ManagerMain(QtWidgets.QMainWindow):
         if job_item is None:
             return
         job = self.jobs[job_item]
-        path = QtWidgets.QFileDialog.getExistingDirectory(self, "Retrieve to",
-                                                      "~",
-                                                      QtWidgets.QFileDialog.Option.ShowDirsOnly)
+        path = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Retrieve to", "~", QtWidgets.QFileDialog.Option.ShowDirsOnly
+        )
         if not path:
             print("No path given")
             return
@@ -189,7 +189,7 @@ class AddJobDialog(QtWidgets.QDialog):
 
         # Ensure path exists before using it
         if self.job.path is None:
-             self.job.path = os.getcwd()
+            self.job.path = os.getcwd()
 
         tabWidget = QtWidgets.QTabWidget()
         self.generalTab = GeneralTab(self.job)
@@ -274,8 +274,7 @@ class GeneralTab(QtWidgets.QWidget):
 
     def browse(self):
         """Open a file dialog to browse for a target job file."""
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Job File",
-                                                     self.pathEdit.text())
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Job File", self.pathEdit.text())
         if filename:
             path, filename = os.path.split(str(filename))
             self.fileNameEdit.setText(filename)
@@ -384,7 +383,7 @@ class DetailsTab(QtWidgets.QWidget):
         """Update the job type based on list box selection."""
         item = self.applicationsListBox.currentItem()
         if item:
-             self.job.type = str(item.text())
+            self.job.type = str(item.text())
 
     def showEvent(self, QShowEvent):
         """Handle widget show events."""
