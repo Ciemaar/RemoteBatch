@@ -5,6 +5,7 @@ from pathlib import Path
 
 import click
 from PyQt6 import QtWidgets
+
 from remotebatch.controller import mgr_main
 from remotebatch.model import ClientQueue
 
