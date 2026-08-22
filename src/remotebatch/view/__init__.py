@@ -51,11 +51,11 @@ class ManagerMain(QtWidgets.QMainWindow):
         layout.addWidget(self.jobListBox)
 
         buttonBox = QtWidgets.QDialogButtonBox()
-        buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.retrieve)
-        buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.delete)
-        buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.newjob)
+        buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.retrieve)  # type: ignore
+        buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.delete)  # type: ignore
+        buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.newjob)  # type: ignore
         self.refreshButton = buttonBox.addButton("Connect", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
-        self.refreshButton.clicked.connect(self.refresh)
+        self.refreshButton.clicked.connect(self.refresh)  # type: ignore
         buttonBox.addButton("Cleanup", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
         layout.addWidget(buttonBox)
 
@@ -80,18 +80,18 @@ class ManagerMain(QtWidgets.QMainWindow):
         aboutAct.triggered.connect(self.about)
 
         filterGroup = QtGui.QActionGroup(self)
-        filterGroup.addAction(self.allAct)
-        filterGroup.addAction(self.resultsAct)
+        filterGroup.addAction(self.allAct)  # type: ignore
+        filterGroup.addAction(self.resultsAct)  # type: ignore
         self.allAct.setChecked(True)
 
-        filterMenu = self.menuBar().addMenu("&Filter")
-        filterMenu.addAction(self.allAct)
-        filterMenu.addAction(self.resultsAct)
-        filterMenu.addAction("Refresh", self.refresh)
+        filterMenu = self.menuBar().addMenu("&Filter")  # type: ignore
+        filterMenu.addAction(self.allAct)  # type: ignore
+        filterMenu.addAction(self.resultsAct)  # type: ignore
+        filterMenu.addAction("Refresh", self.refresh)  # type: ignore
 
-        optionMenu = self.menuBar().addMenu("&Options")
-        optionMenu.addAction(settingsAct)
-        optionMenu.addAction(aboutAct)
+        optionMenu = self.menuBar().addMenu("&Options")  # type: ignore
+        optionMenu.addAction(settingsAct)  # type: ignore
+        optionMenu.addAction(aboutAct)  # type: ignore
 
         widget.setLayout(layout)
 
@@ -115,7 +115,7 @@ class ManagerMain(QtWidgets.QMainWindow):
 
     def refresh(self):
         """Trigger a refresh of the job list from the queue."""
-        self.refreshButton.setText("Refreshing")
+        self.refreshButton.setText("Refreshing")  # type: ignore
         if threaded:
             self.refresher = RunMe(self._refresh)
             self.refresher.start()
@@ -132,9 +132,9 @@ class ManagerMain(QtWidgets.QMainWindow):
             self.jobs[item] = job
         self.refilter()
         if self.queue.isConnected:
-            self.refreshButton.setText("Refresh")
+            self.refreshButton.setText("Refresh")  # type: ignore
         else:
-            self.refreshButton.setText("Connect")
+            self.refreshButton.setText("Connect")  # type: ignore
 
     def newjob(self):
         """Open the Add Job dialog to submit a new job."""
@@ -278,8 +278,8 @@ class GeneralTab(QtWidgets.QWidget):
                                                      self.pathEdit.text())
         if filename:
             path, filename = os.path.split(str(filename))
-            self.fileNameEdit.setText(filename)
-            self.pathEdit.setText(path)
+            self.fileNameEdit.setText(filename)  # type: ignore
+            self.pathEdit.setText(path)  # type: ignore
             self.job.set_jobfile(path, filename)
 
     def createButton(self, text, member):
@@ -293,7 +293,7 @@ class GeneralTab(QtWidgets.QWidget):
             QPushButton: The created button instance.
         """
         button = QtWidgets.QPushButton(text)
-        button.clicked.connect(member)
+        button.clicked.connect(member)  # type: ignore
         return button
 
 
