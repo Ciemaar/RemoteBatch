@@ -311,7 +311,7 @@ class ClientJob(Job):
             return "remote"
 
 
-class Results:
+class Results(Job):
     """Represents the output and execution status of a completed Job."""
 
     def __init__(

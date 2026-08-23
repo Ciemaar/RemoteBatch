@@ -9,9 +9,8 @@ from pathlib import Path
 from time import sleep
 
 import click
-from tenacity import retry, retry_if_exception_type, wait_fixed
-
 from remotebatch.model import BatchQueue, Results
+from tenacity import retry, retry_if_exception_type, wait_fixed
 
 log = logging.getLogger(name=__name__)
 
