@@ -40,3 +40,8 @@ This project uses strict modern Python 3.12+ standards. You must adhere to the f
 
 - **CI Pipelines**: GitHub Actions MUST be set up to run type-checking, ruff linting/formatting, mdformat, and pytest test suites automatically on all pushes and PRs.
 - **Proposing New Tools**: If proposing a new development dependency, you must evaluate based on `pyproject.toml` compatibility, execution speed, and false-positive rates, and document findings in `TOOL_EVALUATION.md` before implementation.
+
+## Git & Branch Management
+
+- **Branch Merging & Rebasing**: When working on an existing or previous branch (e.g., rebasing or merging), features must not be removed if they've been added to the main branch in the intermediate interval.
+- **Commit Comments & PRs**: All the branches being merged in, as well as their matching PRs, must be referenced in the commit comments and any new PRs.
