@@ -51,11 +51,18 @@ class ManagerMain(QtWidgets.QMainWindow):
         layout.addWidget(self.jobListBox)
 
         buttonBox = QtWidgets.QDialogButtonBox()
-        buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.retrieve)
-        buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.delete)
-        buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.newjob)
+        retrieveBtn = buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        if retrieveBtn:
+            retrieveBtn.clicked.connect(self.retrieve)
+        deleteBtn = buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        if deleteBtn:
+            deleteBtn.clicked.connect(self.delete)
+        newjobBtn = buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        if newjobBtn:
+            newjobBtn.clicked.connect(self.newjob)
         self.refreshButton = buttonBox.addButton("Connect", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
-        self.refreshButton.clicked.connect(self.refresh)
+        if self.refreshButton:
+            self.refreshButton.clicked.connect(self.refresh)
         buttonBox.addButton("Cleanup", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
         layout.addWidget(buttonBox)
 
@@ -84,14 +91,18 @@ class ManagerMain(QtWidgets.QMainWindow):
         filterGroup.addAction(self.resultsAct)
         self.allAct.setChecked(True)
 
-        filterMenu = self.menuBar().addMenu("&Filter")
-        filterMenu.addAction(self.allAct)
-        filterMenu.addAction(self.resultsAct)
-        filterMenu.addAction("Refresh", self.refresh)
+        menubar = self.menuBar()
+        if menubar is not None:
+            filterMenu = menubar.addMenu("&Filter")
+            if filterMenu:
+                filterMenu.addAction(self.allAct)
+                filterMenu.addAction(self.resultsAct)
+                filterMenu.addAction("Refresh", self.refresh)
 
-        optionMenu = self.menuBar().addMenu("&Options")
-        optionMenu.addAction(settingsAct)
-        optionMenu.addAction(aboutAct)
+            optionMenu = menubar.addMenu("&Options")
+            if optionMenu:
+                optionMenu.addAction(settingsAct)
+                optionMenu.addAction(aboutAct)
 
         widget.setLayout(layout)
 
@@ -115,7 +126,8 @@ class ManagerMain(QtWidgets.QMainWindow):
 
     def refresh(self):
         """Trigger a refresh of the job list from the queue."""
-        self.refreshButton.setText("Refreshing")
+        if self.refreshButton:
+            self.refreshButton.setText("Refreshing")
         if threaded:
             self.refresher = RunMe(self._refresh)
             self.refresher.start()
@@ -131,10 +143,11 @@ class ManagerMain(QtWidgets.QMainWindow):
             item = QtWidgets.QListWidgetItem(item_text, self.jobListBox)
             self.jobs[item] = job
         self.refilter()
-        if self.queue.isConnected:
-            self.refreshButton.setText("Refresh")
-        else:
-            self.refreshButton.setText("Connect")
+        if self.refreshButton:
+            if self.queue.isConnected:
+                self.refreshButton.setText("Refresh")
+            else:
+                self.refreshButton.setText("Connect")
 
     def newjob(self):
         """Open the Add Job dialog to submit a new job."""

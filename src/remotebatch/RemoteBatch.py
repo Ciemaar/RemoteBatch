@@ -30,7 +30,6 @@ from pathlib import Path
 
 import click
 from PyQt6 import QtWidgets
-
 from remotebatch.controller import job_dialog
 from remotebatch.model import BatchQueue, Results
 
@@ -72,7 +71,7 @@ def main(path: str):
     print("created remote batch app")
     app.start()
     try:
-        resultQueue = BatchQueue(job_class=Results)
+        resultQueue = BatchQueue(job_class=Results)  # type: ignore
         for result in resultQueue.jobs():
             if result.type != "results":
                 continue

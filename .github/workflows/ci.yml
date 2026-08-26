@@ -38,7 +38,7 @@ jobs:
 
     - name: Type check with Pyright
       run: |
-        pyright
+        uv run pyright
 
     - name: Check Markdown formatting
       run: |

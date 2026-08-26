@@ -53,8 +53,8 @@ class Job:
         if s3key:
             metadata = self._get_metadata(s3key)
 
-            self.jobfile = metadata.get("jobfile")
-            self.id = metadata.get("jobid", "unknown")
+            self.jobfile = metadata.get("jobfile")  # type: ignore
+            self.id = metadata.get("jobid", "unknown")  # type: ignore
             if "_" in self.id:
                 parts = self.id.split("_")
                 self.id = parts[0]
@@ -63,15 +63,15 @@ class Job:
                 else:
                     self.step = 0
 
-            self.type = metadata.get("jobtype")
-            self.next_job = metadata.get("next_job")
+            self.type = metadata.get("jobtype")  # type: ignore
+            self.next_job = metadata.get("next_job")  # type: ignore
 
             if hasattr(s3key, "content_length"):
-                self.size = s3key.content_length
+                self.size = s3key.content_length  # type: ignore
             else:
                 self.size = 0
 
-            self._arcpath = metadata.get("arcpath", "")
+            self._arcpath = metadata.get("arcpath", "")  # type: ignore
             if not self._arcpath:
                 if self.type == "results":
                     self._arcpath = "output"
@@ -96,11 +96,11 @@ class Job:
             dict[str, object]: The extracted metadata dictionary.
         """
         if hasattr(key, "metadata"):
-            return key.metadata
+            return key.metadata  # type: ignore
         if hasattr(key, "load"):
             with contextlib.suppress(Exception):
-                key.load()
-                return key.metadata
+                key.load()  # type: ignore
+                return key.metadata  # type: ignore
         return {}
 
     def __str__(self) -> str:
@@ -140,7 +140,7 @@ class Job:
         tmpTar = io.BytesIO()
 
         if self._key and hasattr(self._key, "download_fileobj"):
-            self._key.download_fileobj(tmpTar)
+            self._key.download_fileobj(tmpTar)  # type: ignore
 
         tmpTar.seek(0)
 
@@ -191,7 +191,7 @@ class Job:
     def delete(self) -> None:
         """Delete the job from the storage queue."""
         if self._key and hasattr(self._key, "delete"):
-            self._key.delete()
+            self._key.delete()  # type: ignore
 
     def store_in_key(self, s3key: object) -> None:
         """Serialize the job payload and upload it to the storage queue.
@@ -210,9 +210,9 @@ class Job:
 
         if hasattr(s3key, "put"):
             with Path(bundleFile).open("rb") as data:
-                s3key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
+                s3key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})  # type: ignore
         elif hasattr(s3key, "upload_file"):
-            s3key.upload_file(bundleFile, ExtraArgs={"Metadata": {k: str(v) for k, v in metadata.items()}})
+            s3key.upload_file(bundleFile, ExtraArgs={"Metadata": {k: str(v) for k, v in metadata.items()}})  # type: ignore
 
         self._key = s3key
         Path(bundleFile).unlink()
@@ -379,7 +379,7 @@ class Results:
 
         if hasattr(key, "put"):
             with Path(bundleFile).open("rb") as data:
-                key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})
+                key.put(Body=data, Metadata={k: str(v) for k, v in metadata.items()})  # type: ignore
 
         Path(bundleFile).unlink()
 
@@ -414,8 +414,8 @@ class BatchQueue:
         if not boto3:
             return False
         with contextlib.suppress(Exception):
-            self.s3 = boto3.resource("s3")
-            self.bucket = self.s3.Bucket(bucket)
+            self.s3 = boto3.resource("s3")  # type: ignore
+            self.bucket = self.s3.Bucket(bucket)  # type: ignore
         return True
 
     def queue_job(self, job: Job) -> None:
@@ -425,7 +425,7 @@ class BatchQueue:
             job (Job): The job object to queue.
         """
         if self.bucket:
-            key = self.bucket.Object(job.id)
+            key = self.bucket.Object(job.id)  # type: ignore
             job.store_in_key(key)
 
     def jobs(self) -> Generator[Job]:
@@ -440,11 +440,11 @@ class BatchQueue:
         emptyBucket = False
         while not emptyBucket:
             emptyBucket = True
-            for obj in self.bucket.objects.all():
+            for obj in self.bucket.objects.all():  # type: ignore
                 if obj.key not in self.openJobs:
-                    full_obj = self.bucket.Object(obj.key)
+                    full_obj = self.bucket.Object(obj.key)  # type: ignore
                     try:
-                        full_obj.load()
+                        full_obj.load()  # type: ignore
                     except Exception:
                         continue
 
@@ -463,10 +463,10 @@ class BatchQueue:
             return []
 
         jobs = []
-        for obj in self.bucket.objects.all():
-            full_obj = self.bucket.Object(obj.key)
+        for obj in self.bucket.objects.all():  # type: ignore
+            full_obj = self.bucket.Object(obj.key)  # type: ignore
             try:
-                full_obj.load()
+                full_obj.load()  # type: ignore
             except Exception:
                 continue
             jobs.append(self.job_class(s3key=full_obj))
@@ -556,7 +556,7 @@ class ClientQueue(BatchQueue):
             job (Job): The job to queue.
         """
         if self.isConnected and self.bucket:
-            key = self.bucket.Object(f"{job.id}_{job.type}")
+            key = self.bucket.Object(f"{job.id}_{job.type}")  # type: ignore
             job.store_in_key(key)
         else:
             self.local_jobs.append(job)
@@ -649,7 +649,7 @@ class LocalKey:
         """
         with self.data_path.open("wb") as f:
             if hasattr(Body, "read"):
-                f.write(Body.read())
+                f.write(Body.read())  # type: ignore
             else:
                 f.write(Body)  # type: ignore
         if Metadata:
@@ -679,7 +679,7 @@ class LocalKey:
             fileobj (object): The file-like object to write to.
         """
         with self.data_path.open("rb") as f:
-            fileobj.write(f.read())
+            fileobj.write(f.read())  # type: ignore
 
 
 class LocalQueue(BatchQueue):

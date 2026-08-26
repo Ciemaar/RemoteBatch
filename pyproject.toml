@@ -46,7 +46,7 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "UP", "A", "C4", "SIM", "PLC", "PLE", "PLR", "PLW", "D"]
-ignore = ["UP031", "D203", "D213"] # Ignore UP031, and some subjective pydocstyle rules like 1 blank line before class docstring
+ignore = ["UP031", "D203", "D213", "PLR0915"] # Ignore UP031, and some subjective pydocstyle rules like 1 blank line before class docstring
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -54,7 +54,7 @@ convention = "google"
 [tool.pyright]
 pythonVersion = "3.13"
 venvPath = "."
-venv = "env"
+venv = ".venv"
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 reportMissingImports = false
