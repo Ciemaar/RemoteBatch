@@ -51,11 +51,18 @@ class ManagerMain(QtWidgets.QMainWindow):
         layout.addWidget(self.jobListBox)
 
         buttonBox = QtWidgets.QDialogButtonBox()
-        buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.retrieve)  # type: ignore
-        buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.delete)  # type: ignore
-        buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole).clicked.connect(self.newjob)  # type: ignore
+        retrieveBtn = buttonBox.addButton("Retrieve", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        if retrieveBtn:
+            retrieveBtn.clicked.connect(self.retrieve)
+        deleteBtn = buttonBox.addButton("Delete", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        if deleteBtn:
+            deleteBtn.clicked.connect(self.delete)
+        newjobBtn = buttonBox.addButton("New", QtWidgets.QDialogButtonBox.ButtonRole.ActionRole)
+        if newjobBtn:
+            newjobBtn.clicked.connect(self.newjob)
         self.refreshButton = buttonBox.addButton("Connect", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
-        self.refreshButton.clicked.connect(self.refresh)  # type: ignore
+        if self.refreshButton:
+            self.refreshButton.clicked.connect(self.refresh)
         buttonBox.addButton("Cleanup", QtWidgets.QDialogButtonBox.ButtonRole.ResetRole)
         layout.addWidget(buttonBox)
 
@@ -80,18 +87,22 @@ class ManagerMain(QtWidgets.QMainWindow):
         aboutAct.triggered.connect(self.about)
 
         filterGroup = QtGui.QActionGroup(self)
-        filterGroup.addAction(self.allAct)  # type: ignore
-        filterGroup.addAction(self.resultsAct)  # type: ignore
+        filterGroup.addAction(self.allAct)
+        filterGroup.addAction(self.resultsAct)
         self.allAct.setChecked(True)
 
-        filterMenu = self.menuBar().addMenu("&Filter")  # type: ignore
-        filterMenu.addAction(self.allAct)  # type: ignore
-        filterMenu.addAction(self.resultsAct)  # type: ignore
-        filterMenu.addAction("Refresh", self.refresh)  # type: ignore
+        menubar = self.menuBar()
+        if menubar is not None:
+            filterMenu = menubar.addMenu("&Filter")
+            if filterMenu:
+                filterMenu.addAction(self.allAct)
+                filterMenu.addAction(self.resultsAct)
+                filterMenu.addAction("Refresh", self.refresh)
 
-        optionMenu = self.menuBar().addMenu("&Options")  # type: ignore
-        optionMenu.addAction(settingsAct)  # type: ignore
-        optionMenu.addAction(aboutAct)  # type: ignore
+            optionMenu = menubar.addMenu("&Options")
+            if optionMenu:
+                optionMenu.addAction(settingsAct)
+                optionMenu.addAction(aboutAct)
 
         widget.setLayout(layout)
 
@@ -115,7 +126,8 @@ class ManagerMain(QtWidgets.QMainWindow):
 
     def refresh(self):
         """Trigger a refresh of the job list from the queue."""
-        self.refreshButton.setText("Refreshing")  # type: ignore
+        if self.refreshButton:
+            self.refreshButton.setText("Refreshing")
         if threaded:
             self.refresher = RunMe(self._refresh)
             self.refresher.start()
@@ -131,10 +143,11 @@ class ManagerMain(QtWidgets.QMainWindow):
             item = QtWidgets.QListWidgetItem(item_text, self.jobListBox)
             self.jobs[item] = job
         self.refilter()
-        if self.queue.isConnected:
-            self.refreshButton.setText("Refresh")  # type: ignore
-        else:
-            self.refreshButton.setText("Connect")  # type: ignore
+        if self.refreshButton:
+            if self.queue.isConnected:
+                self.refreshButton.setText("Refresh")
+            else:
+                self.refreshButton.setText("Connect")
 
     def newjob(self):
         """Open the Add Job dialog to submit a new job."""
@@ -147,9 +160,9 @@ class ManagerMain(QtWidgets.QMainWindow):
         if job_item is None:
             return
         job = self.jobs[job_item]
-        path = QtWidgets.QFileDialog.getExistingDirectory(self, "Retrieve to",
-                                                      "~",
-                                                      QtWidgets.QFileDialog.Option.ShowDirsOnly)
+        path = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Retrieve to", "~", QtWidgets.QFileDialog.Option.ShowDirsOnly
+        )
         if not path:
             print("No path given")
             return
@@ -189,7 +202,7 @@ class AddJobDialog(QtWidgets.QDialog):
 
         # Ensure path exists before using it
         if self.job.path is None:
-             self.job.path = os.getcwd()
+            self.job.path = os.getcwd()
 
         tabWidget = QtWidgets.QTabWidget()
         self.generalTab = GeneralTab(self.job)
@@ -274,12 +287,11 @@ class GeneralTab(QtWidgets.QWidget):
 
     def browse(self):
         """Open a file dialog to browse for a target job file."""
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Job File",
-                                                     self.pathEdit.text())
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Job File", self.pathEdit.text())
         if filename:
             path, filename = os.path.split(str(filename))
-            self.fileNameEdit.setText(filename)  # type: ignore
-            self.pathEdit.setText(path)  # type: ignore
+            self.fileNameEdit.setText(filename)
+            self.pathEdit.setText(path)
             self.job.set_jobfile(path, filename)
 
     def createButton(self, text, member):
@@ -293,7 +305,7 @@ class GeneralTab(QtWidgets.QWidget):
             QPushButton: The created button instance.
         """
         button = QtWidgets.QPushButton(text)
-        button.clicked.connect(member)  # type: ignore
+        button.clicked.connect(member)
         return button
 
 
@@ -384,7 +396,7 @@ class DetailsTab(QtWidgets.QWidget):
         """Update the job type based on list box selection."""
         item = self.applicationsListBox.currentItem()
         if item:
-             self.job.type = str(item.text())
+            self.job.type = str(item.text())
 
     def showEvent(self, QShowEvent):
         """Handle widget show events."""
