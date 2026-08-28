@@ -52,7 +52,7 @@ ignore = ["UP031", "D203", "D213", "PLR0915"] # Ignore UP031, and some subjectiv
 convention = "google"
 
 [tool.pyright]
-pythonVersion = "3.12"
+pythonVersion = "3.13"
 venvPath = "."
 venv = ".venv"
 typeCheckingMode = "basic"
