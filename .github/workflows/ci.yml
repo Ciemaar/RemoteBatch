@@ -11,13 +11,17 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.13", "3.14-dev"]
+        python-version: ["3.12", "3.13", "3.14-dev"]
 
     steps:
     - uses: actions/checkout@v4
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
@@ -30,8 +34,8 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[dev]"
-
+        pip install uv
+        uv pip install --system -e ".[dev]"
     - name: Lint with Ruff
       run: |
         ruff check .
