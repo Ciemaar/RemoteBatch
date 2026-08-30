@@ -2,29 +2,51 @@
 
 """Main entry point for the Remote Batch client application."""
 
+#############################################################################
+##
+## Copyright (C) 2004-2005 Trolltech AS. All rights reserved.
+##
+## This file is part of the example classes of the Qt Toolkit.
+##
+## This file may be used under the terms of the GNU General Public
+## License version 2.0 as published by the Free Software Foundation
+## and appearing in the file LICENSE.GPL included in the packaging of
+## this file.  Please review the following information to ensure GNU
+## General Public Licensing requirements will be met:
+## http://www.trolltech.com/products/qt/opensource.html
+##
+## If you are unsure which license is appropriate for your use, please
+## review the following information:
+## http://www.trolltech.com/products/qt/licensing.html or contact the
+## sales department at sales@trolltech.com.
+##
+## This file is provided AS IS with NO WARRANTY OF ANY KIND, INCLUDING THE
+## WARRANTY OF DESIGN, MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+##
+#############################################################################
+import logging
 import sys
 from pathlib import Path
 
-import click
 from PyQt6 import QtWidgets
-
+from PyQt6.QtCore import QCommandLineOption, QCommandLineParser
 from remotebatch.controller import job_dialog
-from remotebatch.model import BatchQueue, Results
+from remotebatch.model import BatchQueue
+
+log = logging.getLogger(__name__)
 
 
 class RemoteBatchApp(QtWidgets.QApplication):
     """The main client application for submitting jobs to RemoteBatch."""
 
-    def __init__(self, path: str, argv: list[str], *args, **xargs):
+    def __init__(self, path: str, argv: list[str]):
         """Initialize the RemoteBatchApp.
 
         Args:
             path (str): The initial path to open for jobs.
             argv (list[str]): Command-line arguments.
-            *args: Variable length argument list.
-            **xargs: Arbitrary keyword arguments.
         """
-        super().__init__(argv, *args, **xargs)
+        super().__init__(argv)
         self.path = path
 
         # Pathlib equivalent of os.makedirs
@@ -33,28 +55,52 @@ class RemoteBatchApp(QtWidgets.QApplication):
 
     def start(self):
         """Start the client application and open the job submission dialog."""
-        print("started")
+        log.debug("started")
         job_dialog(self.path, BatchQueue())
 
 
-@click.command()
-@click.argument("path", default="./", type=click.Path(exists=True))
-def main(path: str):
-    """Start the Remote Batch GUI application to submit jobs.
+def main():
+    """Start the Remote Batch GUI application to submit jobs."""
+    # Pass sys.argv back so Qt can parse the flags it cares about
+    batch_app = RemoteBatchApp("./", sys.argv)
 
-    PATH is the initial directory or file to load. Defaults to current directory.
-    """
-    print("in main")
-    app = RemoteBatchApp(path, sys.argv)
-    print("created remote batch app")
-    app.start()
+    parser = QCommandLineParser()
+    parser.setApplicationDescription("Start the Remote Batch GUI application to submit jobs.")
+    parser.addHelpOption()
+
+    verbose_option = QCommandLineOption(["v", "verbose"], "Enable verbose logging.")
+    parser.addOption(verbose_option)
+
+    parser.addPositionalArgument(
+        "path", "The initial directory or file to load. Defaults to current directory.", "[path]"
+    )
+
+    parser.process(batch_app)
+
+    if parser.isSet(verbose_option):
+        logging.getLogger().setLevel(logging.DEBUG)
+
+    positional_args = parser.positionalArguments()
+    path = positional_args[0] if positional_args else "./"
+
+    batch_app.path = path
+
+    log.debug("in main")
+    log.debug("created remote batch app")
+    batch_app.start()
+
     try:
-        resultQueue = BatchQueue(job_class=Results)
+        from remotebatch.model import Results
+
+        resultQueue = BatchQueue(job_class=Results)  # type: ignore
         for result in resultQueue.jobs():
             if result.type != "results":
                 continue
     except AttributeError:
         resultQueue = None
+
+    # Run the Qt application loop
+    sys.exit(batch_app.exec())
 
 
 if __name__ == "__main__":
