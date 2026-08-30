@@ -15,6 +15,7 @@ dependencies = [
     "pydantic-settings>=2.2.0",
     "click>=8.1.0",
     "tenacity>=8.2.0",
+    "plyer>=2.1.0",
 ]
 
 [project.scripts]
@@ -46,7 +47,7 @@ target-version = "py313"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "UP", "A", "C4", "SIM", "PLC", "PLE", "PLR", "PLW", "D"]
-ignore = ["UP031", "D203", "D213"] # Ignore UP031, and some subjective pydocstyle rules like 1 blank line before class docstring
+ignore = ["UP031", "D203", "D213", "PLR0915", "PLR2004", "PLC0415"] # Ignore UP031, and some subjective pydocstyle rules like 1 blank line before class docstring
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -55,7 +56,7 @@ convention = "google"
 pythonVersion = "3.13"
 venvPath = "."
 venv = "env"
-typeCheckingMode = "basic"
+typeCheckingMode = "strict"
 useLibraryCodeForTypes = true
 reportMissingImports = false
 include = ["src", "tests"]
