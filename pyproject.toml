@@ -7,7 +7,7 @@ name = "remotebatch"
 version = "0.1.0"
 description = "A modern Python 3.13+ application for delegating work from one machine to another."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "PyQt6>=6.8.0",
     "boto3>=1.34.0",
@@ -42,19 +42,19 @@ where = ["src"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py313"
+target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "I", "UP", "A", "C4", "SIM", "PLC", "PLE", "PLR", "PLW", "D"]
-ignore = ["UP031", "D203", "D213"] # Ignore UP031, and some subjective pydocstyle rules like 1 blank line before class docstring
+ignore = ["UP031", "D203", "D213", "PLR0915"] # Ignore UP031, and some subjective pydocstyle rules like 1 blank line before class docstring
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.pyright]
-pythonVersion = "3.13"
+pythonVersion = "3.12"
 venvPath = "."
-venv = "env"
+venv = ".venv"
 typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 reportMissingImports = false

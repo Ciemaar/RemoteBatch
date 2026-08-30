@@ -5,7 +5,6 @@ import shutil
 import tempfile
 
 import pytest
-
 from remotebatch.model import Job, LocalKey, LocalQueue, Results
 
 
@@ -55,15 +54,15 @@ def test_job_lifecycle(local_queue):
         # Retrieve files
         retrieve_path = tempfile.mkdtemp()
         try:
-             found_job.getFiles(to=retrieve_path)
-             # Check if jobfile exists in retrieved path
-             expected_file = os.path.join(retrieve_path, job_name)
-             assert os.path.exists(expected_file)
-             with open(expected_file) as f:
-                 assert f.read() == "test content"
+            found_job.getFiles(to=retrieve_path)
+            # Check if jobfile exists in retrieved path
+            expected_file = os.path.join(retrieve_path, job_name)
+            assert os.path.exists(expected_file)
+            with open(expected_file) as f:
+                assert f.read() == "test content"
 
         finally:
-             shutil.rmtree(retrieve_path)
+            shutil.rmtree(retrieve_path)
 
         # Delete job
         local_queue.delete(found_job)
@@ -81,13 +80,13 @@ def test_results_lifecycle(local_queue):
 
     # Mock a path for results
     with tempfile.TemporaryDirectory() as temp_dir:
-         with open(os.path.join(temp_dir, "output.txt"), "w") as f:
-             f.write("result data")
-         results.path = temp_dir
+        with open(os.path.join(temp_dir, "output.txt"), "w") as f:
+            f.write("result data")
+        results.path = temp_dir
 
-         # Store results using a key from local queue
-         key = LocalKey(local_queue.root_path, "res-1")
-         results.store_in_key(key)
+        # Store results using a key from local queue
+        key = LocalKey(local_queue.root_path, "res-1")
+        results.store_in_key(key)
 
     # Verify results are stored
     assert os.path.exists(os.path.join(local_queue.root_path, "res-1"))

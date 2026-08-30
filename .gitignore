@@ -17,5 +17,3 @@ dist/
 *.swp
 *.swo
 .DS_Store
-.coverage
-coverage.xml
