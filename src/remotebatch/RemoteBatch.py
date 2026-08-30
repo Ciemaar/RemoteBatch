@@ -89,10 +89,10 @@ def main():
     log.debug("created remote batch app")
     batch_app.start()
 
-
     try:
         from remotebatch.model import Results
-        resultQueue = BatchQueue(job_class=Results)
+
+        resultQueue = BatchQueue(job_class=Results)  # type: ignore
         for result in resultQueue.jobs():
             if result.type != "results":
                 continue

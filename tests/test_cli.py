@@ -21,6 +21,7 @@ def test_client_help(mocker):
     # Mock exit to prevent QCommandLineParser.process from actually exiting the test run
     mocker.patch("remotebatch.RemoteBatch.sys.exit")
     mock_app = mocker.patch("remotebatch.RemoteBatch.RemoteBatchApp")
+    mocker.patch("remotebatch.RemoteBatch.BatchQueue")
 
     # Mock QCommandLineParser.process to bypass the internal sys.exit call when --help is used
     mocker.patch("remotebatch.RemoteBatch.QCommandLineParser.process")
@@ -69,6 +70,7 @@ def test_client_verbose_flag(mocker):
     mocker.patch("remotebatch.RemoteBatch.QCommandLineParser.positionalArguments", return_value=[])
 
     mock_log = mocker.patch("remotebatch.RemoteBatch.logging.getLogger")
+    mocker.patch("remotebatch.RemoteBatch.BatchQueue")
 
     client_main()
     mock_log().setLevel.assert_called_with(10)  # logging.DEBUG == 10
