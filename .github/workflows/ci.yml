@@ -36,6 +36,8 @@ jobs:
         python -m pip install --upgrade pip
         pip install uv
         uv pip install --system -e ".[dev]"
+        pip install pytest pytest-cov pytest-qt pytest-mock hypothesis ruff pyright types-requests types-boto3 mdformat pre-commit
+
     - name: Lint with Ruff
       run: |
         ruff check .
