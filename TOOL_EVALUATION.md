@@ -9,8 +9,8 @@ This document outlines the evaluation and adoption of various development tools 
 
 ## 2. Linter: `ruff` vs. `flake8` / `pylint`
 
-- **Evaluation**: Legacy codebases often rely on `flake8` and `pylint`, coupled with numerous plugins (like `pydocstyle` for docstrings). `ruff` consolidates all these tools into a single, incredibly fast binary. It supports `flake8` rules, `pylint` rules, and `pydocstyle` (via the `D` rule selection).
-- **Decision**: Adopt `ruff`. We have configured it in `pyproject.toml` to catch a wide array of issues (e.g., standard errors, pyupgrade suggestions, list comprehensions, and missing Google-style docstrings).
+- **Evaluation**: Legacy codebases often rely on `flake8` and `pylint`, coupled with numerous plugins (like `pydocstyle` for docstrings). `ruff` consolidates all these tools into a single, incredibly fast binary. It supports `flake8` rules, `pylint` rules, and `pydocstyle` (via the `D` rule selection). In order to target Python 3.14+, we have evaluated Ruff versions and determined that upgrading to at least `0.16.6` is necessary for full support of `target-version = "py314"`.
+- **Decision**: Adopt `ruff` (version >= 0.16.6). We have configured it in `pyproject.toml` to catch a wide array of issues (e.g., standard errors, pyupgrade suggestions, list comprehensions, and missing Google-style docstrings) and explicitly target Python 3.14 standards.
 
 ## 3. Type Checker: `pyright` vs. `mypy` vs. `pyre` vs. `ty`
 
