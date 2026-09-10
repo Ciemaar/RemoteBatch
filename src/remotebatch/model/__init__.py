@@ -1,5 +1,5 @@
-
 """Model package containing core Queue and Job logic."""
+
 import contextlib
 import io
 import logging
@@ -172,7 +172,7 @@ class Job:
             self.jobroot = str(Path(self.path) / self._arcpath)
             return self.jobroot
 
-    def mark_complete(self, next_job: "Job | None" = None) -> None:
+    def mark_complete(self, next_job: Job | None = None) -> None:
         """Mark the job as complete and link the next step if applicable.
 
         Args:
@@ -259,11 +259,13 @@ class Job:
 
 class QueuedJob(Job):
     """A standard Job stored in the processing queue."""
+
     pass
 
 
 class BatchJob(Job):
     """A Job executed as part of a batch process."""
+
     pass
 
 
@@ -588,7 +590,7 @@ class ClientQueue(BatchQueue):
         try:
             with (self.local_path / "index.pkl").open("rb") as f:
                 state = pickle.load(f)
-        except (OSError, EOFError):
+        except OSError, EOFError:
             pass
         else:
             self.local_jobs = state.get("local_jobs", [])

@@ -134,6 +134,7 @@ You "connect" a signal to a slot to make things happen.
 def my_custom_function():
     print("Button was clicked!")
 
+
 button = QtWidgets.QPushButton("Click Me")
 # Connect the 'clicked' signal to the 'my_custom_function' slot
 button.clicked.connect(my_custom_function)
