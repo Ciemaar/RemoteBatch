@@ -7,4 +7,3 @@ You are an AI assistant helping with a Python 3.12+ project.
 - Use `pathlib.Path` and context managers for cleanup.
 - Maintain test coverage and use `pytest`.
 - Write meaningful Google-style docstrings.
-- **Git & Branch Management**: Do not remove intermediate features when rebasing or merging. Always reference merged branches and matching PRs in commit messages and new PRs.
