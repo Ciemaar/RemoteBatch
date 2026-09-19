@@ -2,7 +2,6 @@
 
 from hypothesis import given
 from hypothesis import strategies as st
-
 from remotebatch.model import Job
 
 

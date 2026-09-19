@@ -39,6 +39,11 @@ This document outlines the evaluation and adoption of various development tools 
   - **`tenacity`**: An excellent, mature library specifically designed to simplify retry logic, implement exponential backoff, and manage wait states gracefully without cluttering business logic.
 - **Decision**: Adopt `tenacity`. We can replace the fragile `try/except Exception: sleep(180)` logic around the S3 polling loop with a robust `@retry` decorator, providing exponential backoff and cleaner code structure for the server daemon.
 
+## 7. Desktop Notifications: `plyer` vs `osso`
+
+- **Evaluation**: The backend server historically relied on the `osso` framework for system notifications. `osso` is an obsolete Maemo/MeeGo framework and is generally unsupported in modern cross-platform Python development.
+- **Decision**: Adopt `plyer`. `plyer` is a modern, actively maintained library for cross-platform hardware/OS features, including system notifications. It cleanly wraps native notification systems (e.g., dbus, Windows Toasts, macOS Notifier) and degrades gracefully without throwing hard faults.
+
 ## Summary of Adopted Toolchain
 
 - **Linting & Formatting**: `ruff`
@@ -46,3 +51,4 @@ This document outlines the evaluation and adoption of various development tools 
 - **Testing**: `pytest` (with `pytest-cov`, `pytest-mock`, and `hypothesis`)
 - **Markdown Formatting**: `mdformat`
 - **Retry Logic**: `tenacity`
+- **Notifications**: `plyer`
