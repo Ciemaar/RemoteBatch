@@ -49,7 +49,7 @@ def main(path: str):
     print("created remote batch app")
     app.start()
     try:
-        resultQueue = BatchQueue(job_class=Results)  # type: ignore
+        resultQueue = BatchQueue(job_class=Results)
         for result in resultQueue.jobs():
             if result.type != "results":
                 continue

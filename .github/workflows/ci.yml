@@ -13,14 +13,8 @@ jobs:
       matrix:
         python-version: ["3.14", "3.15"]
 
-    env:
-      ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
-
     steps:
     - uses: actions/checkout@v4
-
-    - name: Install uv
-      uses: astral-sh/setup-uv@v3
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
@@ -36,20 +30,20 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        uv pip install --system -e ".[dev]"
+        pip install -e ".[dev]"
 
     - name: Lint with Ruff
       run: |
-        uv run ruff check .
+        ruff check .
 
     - name: Type check with Pyright
       run: |
-        uv run pyright
+        pyright
 
     - name: Check Markdown formatting
       run: |
-        uv run mdformat --check $(find . -name "*.md" -not -path "*/\.*")
+        mdformat --check .
 
     - name: Run tests with coverage
       run: |
-        xvfb-run -a uv run pytest
+        xvfb-run -a pytest
