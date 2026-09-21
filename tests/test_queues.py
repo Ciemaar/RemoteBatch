@@ -3,7 +3,6 @@
 from unittest.mock import MagicMock
 
 import pytest
-
 from remotebatch.model import BatchQueue, ClientQueue, Job
 
 

@@ -2,7 +2,6 @@
 
 import pytest
 from click.testing import CliRunner
-
 from remotebatch.BatchManager import main as manager_main
 from remotebatch.RemoteBatch import main as client_main
 from remotebatch.server import main as server_main
