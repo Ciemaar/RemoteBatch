@@ -92,7 +92,7 @@ def main():
     try:
         from remotebatch.model import Results
 
-        resultQueue = BatchQueue(job_class=Results)  # type: ignore
+        resultQueue = BatchQueue(job_class=Results)  # type: ignore  # type: ignore
         for result in resultQueue.jobs():
             if result.type != "results":
                 continue
