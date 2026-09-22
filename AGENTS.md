@@ -1,6 +1,6 @@
 # AI Agent Instructions
 
-This project is a RemoteBatch job processing application using Python 3.12+, featuring a PyQt6 GUI client and a server daemon. You must adhere to the following strict modern standards when assisting with code.
+This project is a RemoteBatch job processing application using Python 3.14+, featuring a PyQt6 GUI client and a server daemon. You must adhere to the following strict modern standards when assisting with code.
 
 ## Architecture & Configuration
 
@@ -20,7 +20,7 @@ This project is a RemoteBatch job processing application using Python 3.12+, fea
 
 ## Syntax & Strictness
 
-- **Python Version**: Write code optimized for Python 3.12+. Use modern built-in features.
+- **Python Version**: Write code optimized for Python 3.14+. Use modern built-in features.
 - **Modern Typing**: Use built-in generics and the pipe operator for unions (e.g., `list[str]`, `dict[str, int]`, `str | None`). Do not import `List`, `Dict`, `Optional`, or `Union` from the legacy `typing` module.
 - **Type Checking**: Type checking strictly uses `pyright` in 'strict' mode. Do not bypass the type checker with `typing.Any`. For highly dynamic parameters, use standard abstract base classes.
 - **Control Flow**: Implicit ternary operator shortcuts (e.g., `x or y`) are prohibited for non-boolean results. Explicit ternary statements (e.g., `x if x is not None else y`) must be used instead.

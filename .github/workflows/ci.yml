@@ -42,7 +42,7 @@ jobs:
 
     - name: Check Markdown formatting
       run: |
-        mdformat --check .
+        mdformat --check $(find . -name "*.md" -not -path "*/\.*")
 
     - name: Run tests with coverage
       run: |
