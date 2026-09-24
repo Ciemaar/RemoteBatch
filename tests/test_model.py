@@ -5,6 +5,7 @@ import shutil
 import tempfile
 
 import pytest
+
 from remotebatch.model import Job, LocalKey, LocalQueue, Results
 
 

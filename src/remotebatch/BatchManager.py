@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QCommandLineOption, QCommandLineParser
+
 from remotebatch.controller import mgr_main
 from remotebatch.model import ClientQueue
 

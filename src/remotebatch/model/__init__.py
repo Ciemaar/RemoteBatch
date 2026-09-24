@@ -179,7 +179,7 @@ class Job:
             self.jobroot = str(Path(self.path) / self._arcpath)
             return self.jobroot
 
-    def mark_complete(self, next_job: "Job | Results | None" = None) -> None:
+    def mark_complete(self, next_job: Job | Results | None = None) -> None:
         """Mark the job as complete and link the next step if applicable.
 
         Args:
@@ -439,7 +439,7 @@ class BatchQueue:
                 self.bucket = typing.cast(typing.Callable[..., typing.Any], bucket_fn)(bucket)
         return True
 
-    def queue_job(self, job: "Job | Results") -> None:
+    def queue_job(self, job: Job | Results) -> None:
         """Upload and add a job to the remote queue.
 
         Args:
@@ -602,7 +602,7 @@ class ClientQueue(BatchQueue):
             self.cached_remote_jobs = super().allJobs()
         return self.cached_remote_jobs
 
-    def queue_job(self, job: "Job | Results") -> None:
+    def queue_job(self, job: Job | Results) -> None:
         """Add a job to the queue, caching it locally if offline.
 
         Args:
@@ -644,7 +644,7 @@ class ClientQueue(BatchQueue):
         try:
             with (self.local_path / "index.yaml").open("r") as f:
                 state = yaml.safe_load(f)
-        except (OSError, EOFError):
+        except OSError, EOFError:
             pass
         else:
             self.local_jobs = state.get("local_jobs", [])
@@ -780,7 +780,7 @@ class LocalQueue(BatchQueue):
         """
         return True
 
-    def queue_job(self, job: "Job | Results") -> None:
+    def queue_job(self, job: Job | Results) -> None:
         """Store a job locally in the simulated queue directory.
 
         Args:
