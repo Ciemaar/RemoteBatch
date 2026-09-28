@@ -4,7 +4,6 @@ import logging
 from pathlib import Path
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-
 from remotebatch.view.notifier import notify
 
 log = logging.getLogger(__name__)

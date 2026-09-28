@@ -8,7 +8,6 @@ from pathlib import Path
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QCommandLineOption, QCommandLineParser
-
 from remotebatch.controller import job_dialog
 from remotebatch.model import BatchQueue
 

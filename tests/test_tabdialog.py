@@ -1,7 +1,6 @@
 """Tests for tabdialog.py."""
 
 from PyQt6 import QtWidgets
-
 from remotebatch.tabdialog import TabDialog
 
 
