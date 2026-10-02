@@ -651,7 +651,7 @@ class ClientQueue(BatchQueue):
         }
 
         with (self.local_path / "index.yaml").open("w") as f:
-            yaml.safe_dump(state, f)
+            yaml.dump(state, f)
 
     def load(self) -> None:
         """Load the local queue state from disk."""
