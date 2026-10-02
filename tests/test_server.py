@@ -75,3 +75,117 @@ def test_process_job_no_type(mocker):
     result = processJob(job)
     assert result is None
     mock_mark_complete.assert_called_once()
+
+
+def test_poll_and_process_already_complete(mocker):
+    """Test poll_and_process skips already completed jobs."""
+    batch_queue = mocker.MagicMock()
+    result_queue = mocker.MagicMock()
+
+    mock_job = mocker.MagicMock()
+    mock_job.isComplete = True
+
+    batch_queue.jobs.return_value = [mock_job]
+
+    from remotebatch.server import poll_and_process
+
+    poll_and_process(batch_queue, result_queue)
+
+    # processJob should not be called since it's already complete
+    mock_job.getFiles.assert_not_called()
+
+
+def test_poll_and_process_success(mocker):
+    """Test poll_and_process successfully executes and links next job."""
+    batch_queue = mocker.MagicMock()
+    result_queue = mocker.MagicMock()
+
+    mock_job = mocker.MagicMock()
+    mock_job.isComplete = False
+
+    batch_queue.jobs.return_value = [mock_job]
+
+    mocker.patch("remotebatch.server.processJob", return_value=mocker.MagicMock())
+
+    from remotebatch.server import poll_and_process
+
+    poll_and_process(batch_queue, result_queue)
+
+    mock_job.mark_complete.assert_called_once()
+    mock_job.cleanup.assert_called_once()
+    result_queue.queue_job.assert_called_once()
+
+
+def test_poll_and_process_exception(mocker):
+    """Test poll_and_process handles exceptions smoothly."""
+    batch_queue = mocker.MagicMock()
+    result_queue = mocker.MagicMock()
+
+    mock_job = mocker.MagicMock()
+    mock_job.isComplete = False
+
+    batch_queue.jobs.return_value = [mock_job]
+
+    mocker.patch("remotebatch.server.processJob", side_effect=ValueError("Test Exception"))
+
+    from remotebatch.server import poll_and_process
+
+    poll_and_process(batch_queue, result_queue)
+
+    # mark_complete should NOT be called on failure
+    mock_job.mark_complete.assert_not_called()
+    # but cleanup still runs
+    mock_job.cleanup.assert_called_once()
+
+
+def test_processJob_povray(mocker):
+    """Test processJob with povray job type."""
+    from remotebatch.server import processJob
+
+    mock_job = mocker.MagicMock()
+    mock_job.type = "povray"
+    mock_job.jobfile = "test.ini"
+    mock_job.path = "/tmp/test"
+    mock_job.id = "123"
+    mock_job.step = 0
+
+    mock_subprocess = mocker.patch("remotebatch.server.subprocess.call", return_value=0)
+    mock_results = mocker.patch("remotebatch.server.Results")
+    mocker.patch("remotebatch.server.Path")
+
+    result = processJob(mock_job)
+
+    mock_job.getFiles.assert_called_once()
+    mock_subprocess.assert_called_once_with(("/usr/bin/povray", "test.ini"), cwd="/tmp/test")
+    mock_results.assert_called_once()
+    assert mock_results.call_args[0][0] == "123_1"
+    assert mock_results.call_args[0][2] == 0
+    mock_results.return_value.mkTar.assert_called_once()
+    assert result == mock_results.return_value
+
+
+def test_processJob_results(mocker):
+    """Test processJob skips results type."""
+    from remotebatch.server import processJob
+
+    mock_job = mocker.MagicMock()
+    mock_job.type = "results"
+
+    result = processJob(mock_job)
+    assert result is None
+
+
+def test_processJob_unknown(mocker):
+    """Test processJob handles unknown job types."""
+    from remotebatch.server import processJob
+
+    mock_job = mocker.MagicMock()
+    mock_job.type = "unknown"
+
+    mock_job.getFiles.return_value = "/tmp/unzipped"
+
+    result = processJob(mock_job)
+
+    mock_job.getFiles.assert_called_once()
+    # Since it does not match known types, it returns None
+    assert result is None
