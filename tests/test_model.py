@@ -149,10 +149,12 @@ def test_results_mktar(mocker):
     # the add method should be called on the path itself
     mock_tar.return_value.__enter__.return_value.add.assert_called_with("some_path", arcname="output", recursive=True)
 
+
 def test_client_queue_serialization(local_queue):
     """Test safe YAML serialization and deserialization for ClientQueue."""
-    from remotebatch.model import ClientQueue, ClientJob, Results, Job
     from pathlib import Path
+
+    from remotebatch.model import ClientJob, ClientQueue, Job, Results
 
     queue = ClientQueue(local_path=str(local_queue.root_path))
 
