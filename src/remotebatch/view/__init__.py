@@ -1,10 +1,10 @@
 """View package containing GUI components for the application."""
 
-import os.path
+lazy import os.path
 
-from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets  # eager: GUI backend selection/registration
 
-from view.notifier import notify
+lazy from view.notifier import notify
 
 threaded = True
 
