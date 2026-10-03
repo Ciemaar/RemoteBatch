@@ -5,8 +5,8 @@
 lazy import sys
 lazy from pathlib import Path
 
-lazy import click
 from PyQt6 import QtWidgets  # eager: GUI backend selection/registration
+lazy import click
 
 lazy from remotebatch.controller import job_dialog
 lazy from remotebatch.model import BatchQueue, Results
