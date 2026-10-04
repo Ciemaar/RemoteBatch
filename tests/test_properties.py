@@ -1,9 +1,9 @@
 """Property-based testing for model classes."""
 
-from hypothesis import given
-from hypothesis import strategies as st
+lazy from hypothesis import given
+lazy from hypothesis import strategies as st
 
-from remotebatch.model import Job
+lazy from remotebatch.model import Job
 
 
 @given(st.text(), st.text(), st.integers())

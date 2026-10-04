@@ -1,11 +1,11 @@
 """Tests for queue implementations."""
 
-from unittest.mock import MagicMock
+lazy from unittest.mock import MagicMock
 
-import pytest
+lazy import pytest
 
-from remotebatch import model
-from remotebatch.model import BatchQueue, ClientQueue, Job
+lazy from remotebatch import model
+lazy from remotebatch.model import BatchQueue, ClientQueue, Job
 
 
 @pytest.fixture
