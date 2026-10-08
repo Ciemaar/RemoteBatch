@@ -492,7 +492,7 @@ class BatchQueue:
                                     emptyBucket = False
                                     yield job
 
-    def allJobs(self) -> list[Job | Results]:
+    def allJobs(self) -> list[Job]:
         """Retrieve all jobs currently present in the queue.
 
         Returns:
@@ -501,7 +501,7 @@ class BatchQueue:
         if not self.bucket:
             return []
 
-        jobs: list[Job | Results] = []
+        jobs: list[Job] = []
         objects_attr = getattr(self.bucket, "objects", None)
         if objects_attr and hasattr(objects_attr, "all"):
             all_fn = objects_attr.all
@@ -556,8 +556,8 @@ class ClientQueue(BatchQueue):
             check_network (object, optional): Verify network connectivity. Defaults to always returning True.
         """
         self.openJobs: dict[str, bool] = {}
-        self.local_jobs: list[Job | Results] = []
-        self.cached_remote_jobs: list[Job | Results] = []
+        self.local_jobs: list[Job] = []
+        self.cached_remote_jobs: list[Job] = []
         self.local_path = Path(local_path)
         self.job_class = job_class
         self.bucket: object | None = None
@@ -592,7 +592,7 @@ class ClientQueue(BatchQueue):
         return self.bucket is not None
 
     @property
-    def remote_jobs(self) -> list[Job | Results]:
+    def remote_jobs(self) -> list[Job]:
         """Fetch the jobs from the remote queue and cache them.
 
         Returns:
@@ -617,7 +617,7 @@ class ClientQueue(BatchQueue):
         elif isinstance(job, Job):
             self.local_jobs.append(job)
 
-    def allJobs(self) -> list[Job | Results]:
+    def allJobs(self) -> list[Job]:
         """Retrieve a combined list of local and remote jobs.
 
         Returns:
@@ -637,7 +637,7 @@ class ClientQueue(BatchQueue):
         """Save the local queue state to disk."""
         self.local_path.mkdir(parents=True, exist_ok=True)
 
-        def serialize_job(job: Job | Results) -> dict[str, object]:
+        def serialize_job(job: Job) -> dict[str, object]:
             getstate_fn = getattr(job, "__getstate__", None)
             state_dict = getstate_fn() if callable(getstate_fn) else job.__dict__.copy()
             # Ensure _key is never serialized since it contains boto3/LocalKey objects
@@ -680,7 +680,7 @@ class ClientQueue(BatchQueue):
             pass
         else:
             self.local_jobs = typing.cast(
-                list[Job | Results],
+                list[Job],
                 [
                     j
                     for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("local_jobs", []))
@@ -688,7 +688,7 @@ class ClientQueue(BatchQueue):
                 ],
             )
             self.cached_remote_jobs = typing.cast(
-                list[Job | Results],
+                list[Job],
                 [
                     j
                     for j in (
@@ -853,7 +853,7 @@ class LocalQueue(BatchQueue):
             if key.exists():
                 yield self.job_class(s3key=key)
 
-    def allJobs(self) -> list[Job | Results]:
+    def allJobs(self) -> list[Job]:
         """Retrieve all jobs in the local queue directory.
 
         Returns:

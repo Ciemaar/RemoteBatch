@@ -9,7 +9,7 @@ def test_add_job_dialog(qtbot, mocker):
     mock_queue = mocker.MagicMock()
     # Use real Job object since PyQt strictly types parameters
     mock_job = Job("test.ini")
-    mock_queue.job_class.return_value = mock_job
+    mock_queue.job_class.return_value = mock_job  # type: ignore  # type: ignore
     dialog = AddJobDialog(mock_queue)
     qtbot.addWidget(dialog)
 
@@ -40,8 +40,8 @@ def test_manager_main(qtbot, mocker):
     mock_job2.size = 200
     mock_job2.storage = "local"
 
-    mock_queue.jobs.return_value = []
-    mock_queue.allJobs.return_value = [mock_job1, mock_job2]
+    mock_queue.jobs.return_value = []  # type: ignore  # type: ignore
+    mock_queue.allJobs.return_value = [mock_job1, mock_job2]  # type: ignore  # type: ignore
 
     window = ManagerMain(mock_queue)
     qtbot.addWidget(window)
@@ -75,9 +75,9 @@ def test_retrieve_job(qtbot, mocker):
     mock_job.size = 100
     mock_job.type = "povray"
     mock_job.storage = "remote"
-    mock_queue.allJobs.return_value = [mock_job]
+    mock_queue.allJobs.return_value = [mock_job]  # type: ignore  # type: ignore
 
-    mock_queue.jobs.return_value = []
+    mock_queue.jobs.return_value = []  # type: ignore  # type: ignore
     window = ManagerMain(mock_queue)
     qtbot.addWidget(window)
 
