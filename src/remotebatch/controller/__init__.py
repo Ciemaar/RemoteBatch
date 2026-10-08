@@ -1,6 +1,6 @@
 """Controller package for the RemoteBatch GUI application."""
 
-lazy from view import AddJobDialog, ManagerMain
+from view import AddJobDialog, ManagerMain
 
 
 def mgr_main(queue):

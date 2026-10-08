@@ -4,7 +4,7 @@ lazy import os.path
 
 from PyQt6 import QtCore, QtGui, QtWidgets  # eager: GUI backend selection/registration
 
-lazy from view.notifier import notify
+from view.notifier import notify
 
 threaded = True
 
