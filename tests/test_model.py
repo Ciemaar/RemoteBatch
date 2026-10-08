@@ -97,3 +97,96 @@ def test_results_lifecycle(local_queue):
     key_loaded = LocalKey(local_queue.root_path, "res-1")
     assert key_loaded.metadata.get("jobid") == "res-1"
     assert key_loaded.metadata.get("jobstatus") == "success"
+
+
+def test_results_jobroot():
+    """Test that Results type generates correctly assigned defaults."""
+    res = Results("test_id", "my_path", 0)
+    assert res.id == "test_id"
+    assert res.type == "results"
+    assert res.path == "my_path"
+
+
+def test_job_metadata(mocker):
+    """Test that Job properly extracts metadata from s3key."""
+    from remotebatch.model import Job
+
+    mock_s3key = mocker.MagicMock()
+    mock_s3key.metadata = {"jobid": "123_5", "jobtype": "povray", "jobfile": "test.ini"}
+    mock_s3key.content_length = 500
+
+    j = Job(s3key=mock_s3key)
+
+    assert j.id == "123"
+    assert j.step == 5
+    assert j.type == "povray"
+    assert j.jobfile == "test.ini"
+    assert j.size == 500
+
+
+def test_job_tarball_handling(mocker):
+    """Test job tarball serialization and file gathering."""
+    from remotebatch.model import Job
+
+    j = Job("test.ini")
+    j.id = "myid123"
+    j.type = "povray"
+
+    mock_tar = mocker.patch("remotebatch.model.tarfile.open")
+    j.mkTar()
+    mock_tar.assert_called_once()
+    mock_tar.return_value.__enter__.return_value.add.assert_called()
+
+
+def test_results_mktar(mocker):
+    """Test mkTar for results type specifically checks the path."""
+    from remotebatch.model import Results
+
+    res = Results("123", "some_path", 0)
+    mock_tar = mocker.patch("remotebatch.model.tarfile.open")
+    res.mkTar()
+    mock_tar.assert_called_once()
+    # the add method should be called on the path itself
+    mock_tar.return_value.__enter__.return_value.add.assert_called_with("some_path", arcname="output", recursive=True)
+
+
+def test_client_queue_serialization(local_queue):
+    """Test safe YAML serialization and deserialization for ClientQueue."""
+    from pathlib import Path
+
+    from remotebatch.model import ClientJob, ClientQueue, Job, Results
+
+    queue = ClientQueue(local_path=str(local_queue.root_path))
+
+    j1 = ClientJob("test1.ini")
+    j1.id = "cjob1"
+    j1.type = "test"
+
+    j2 = Results("res2", "/tmp", 0)
+
+    j3 = Job("test3.ini")
+    j3.id = "job3"
+    j3.type = "povray"
+
+    queue.local_jobs = [j1]
+    queue.cached_remote_jobs = [j2, j3]
+
+    # Check that saving creates the file and uses safe_dump
+    queue.save()
+    yaml_file = Path(queue.local_path) / "index.yaml"
+    assert yaml_file.exists()
+
+    # Reload into a fresh queue
+    queue2 = ClientQueue(local_path=str(local_queue.root_path))
+    queue2.load()
+
+    assert len(queue2.local_jobs) == 1
+    assert queue2.local_jobs[0].id == "cjob1"
+    assert type(queue2.local_jobs[0]).__name__ == "ClientJob"
+
+    assert len(queue2.cached_remote_jobs) == 2
+    assert queue2.cached_remote_jobs[0].id == "res2"
+    assert type(queue2.cached_remote_jobs[0]).__name__ == "Results"
+
+    assert queue2.cached_remote_jobs[1].id == "job3"
+    assert type(queue2.cached_remote_jobs[1]).__name__ == "Job"
