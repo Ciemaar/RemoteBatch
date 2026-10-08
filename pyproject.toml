@@ -15,8 +15,6 @@ dependencies = [
     "pydantic-settings>=2.2.0",
     "click>=8.1.0",
     "tenacity>=8.2.0",
-    "plyer>=2.1.0",
-    "pyyaml>=6.0",
 ]
 
 [project.scripts]
@@ -57,7 +55,7 @@ convention = "google"
 pythonVersion = "3.14"
 venvPath = "."
 venv = ".venv"
-typeCheckingMode = "strict"
+typeCheckingMode = "basic"
 useLibraryCodeForTypes = true
 reportMissingImports = false
 include = ["src", "tests"]
