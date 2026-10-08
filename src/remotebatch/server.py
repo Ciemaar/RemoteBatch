@@ -2,16 +2,16 @@
 
 """Server daemon for processing jobs from the queue."""
 
-import logging
-import subprocess
-import traceback
-from pathlib import Path
-from time import sleep
+lazy import logging
+lazy import subprocess
+lazy import traceback
+lazy from pathlib import Path
+lazy from time import sleep
 
-import click
-from tenacity import retry, retry_if_exception_type, wait_fixed
+lazy import click
+lazy from tenacity import retry, retry_if_exception_type, wait_fixed
 
-from remotebatch.model import BatchQueue, Results
+lazy from remotebatch.model import BatchQueue, Results
 
 log = logging.getLogger(name=__name__)
 

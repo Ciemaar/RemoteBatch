@@ -2,7 +2,7 @@
 
 """Module containing the TabDialog and its constituent tabs for Job details."""
 
-from PyQt6 import QtCore, QtWidgets
+from PyQt6 import QtCore, QtWidgets  # eager: GUI backend selection/registration
 
 
 class TabDialog(QtWidgets.QDialog):
@@ -181,7 +181,7 @@ class ApplicationsTab(QtWidgets.QWidget):
 
 
 if __name__ == "__main__":
-    import sys
+    import sys  # eager: block scope or try/except
 
     ARGS_MIN_LENGTH = 2
 
