@@ -1,13 +1,13 @@
 """Entry point for the Batch Manager GUI application."""
 
-import sys
-from pathlib import Path
+lazy import sys
+lazy from pathlib import Path
 
-import click
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets  # eager: GUI backend selection/registration
+lazy import click
 
-from remotebatch.controller import mgr_main
-from remotebatch.model import ClientQueue
+lazy from remotebatch.controller import mgr_main
+lazy from remotebatch.model import ClientQueue
 
 
 class RemoteMgrApp(QtWidgets.QApplication):

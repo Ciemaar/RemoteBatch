@@ -1,12 +1,12 @@
 """Tests for the job model and local queue logic."""
 
-import os
-import shutil
-import tempfile
+lazy import os
+lazy import shutil
+lazy import tempfile
 
-import pytest
+lazy import pytest
 
-from remotebatch.model import Job, LocalKey, LocalQueue, Results
+lazy from remotebatch.model import Job, LocalKey, LocalQueue, Results
 
 
 @pytest.fixture

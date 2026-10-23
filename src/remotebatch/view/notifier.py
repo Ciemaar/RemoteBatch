@@ -1,7 +1,7 @@
 """Notifications module for the application."""
 
 try:
-    import osso
+    import osso  # eager: block scope or try/except
 
     def notify(message, title="Remoted Batch"):
         """Send a notification using osso framework.

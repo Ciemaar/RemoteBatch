@@ -1,23 +1,23 @@
 """Model package containing core Queue and Job logic."""
 
-import contextlib
-import io
-import logging
-import pickle
-import tarfile
-import tempfile
-import uuid
-from collections.abc import Generator
-from pathlib import Path
-from typing import Any
+lazy import contextlib
+lazy import io
+lazy import logging
+lazy import pickle
+lazy import tarfile
+lazy import tempfile
+lazy import uuid
+lazy from collections.abc import Generator
+lazy from pathlib import Path
+lazy from typing import Any
 
 # Try to import boto3, but allow it to fail if we are just testing local queue
 try:
-    import boto3
+    import boto3  # eager: block scope or try/except
 except ImportError:
     boto3 = None
 
-from remotebatch.app_secrets import REMOTE_BATCH_BUCKET
+lazy from remotebatch.app_secrets import REMOTE_BATCH_BUCKET
 
 log = logging.getLogger(__name__)
 

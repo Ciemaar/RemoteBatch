@@ -1,10 +1,10 @@
 """Tests for the job processing server."""
 
-import os
-import tempfile
+lazy import os
+lazy import tempfile
 
-from remotebatch.model import Job, Results
-from remotebatch.server import processJob
+lazy from remotebatch.model import Job, Results
+lazy from remotebatch.server import processJob
 
 
 def test_process_job_povray(mocker):
