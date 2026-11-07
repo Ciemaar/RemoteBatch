@@ -7,6 +7,7 @@ This project is a RemoteBatch job processing application using Python 3.14+, fea
 - **Project Layout**: Use a standard `src`-based directory layout (`src/remotebatch/`).
 - **Single Source of Truth**: All dependencies, build configurations, and tool settings MUST be centralized in `pyproject.toml`.
 - **Environment Management**: Strictly require `uv`. The use of `pip`, `poetry`, and `pipenv` is prohibited, and `uv.lock` must be checked into version control.
+- **Security upgrades and `uv.lock`**: When you raise a version only to satisfy `uv audit` or a security advisory, you must not edit `[project] dependencies`. Run `uv lock --upgrade-package <package>`. Only if a minimum must be enforced, add it to `[tool.uv] constraint-dependencies`. In an application this applies to direct dependencies too. In a library that others install, `constraint-dependencies` is not published in the package metadata and binds only your own lock, so a minimum your users must honour belongs in `[project] dependencies`. If the fixed version falls outside the range you declare, or your library's users need the minimum, that is a real dependency change: edit `[project] dependencies` and say so. You must never resolve a `uv.lock` merge conflict by hand: take the default branch's `uv.lock` and run `uv lock`.
 - **Key Development Commands**:
   - `uv lock` (generate lockfile)
   - `uv pip install -e .[dev]` (install dependencies)
