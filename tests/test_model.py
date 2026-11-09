@@ -175,6 +175,9 @@ def test_client_queue_serialization(local_queue):
     queue.save()
     yaml_file = Path(queue.local_path) / "index.yaml"
     assert yaml_file.exists()
+    with yaml_file.open() as f:
+        content = f.read()
+        assert "!!python/" not in content
 
     # Reload into a fresh queue
     queue2 = ClientQueue(local_path=str(local_queue.root_path))
