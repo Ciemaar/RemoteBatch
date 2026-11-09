@@ -148,7 +148,7 @@ class ManagerMain(QtWidgets.QMainWindow):
         self.jobListBox.clear()
         self.jobs = {}
         for job in self.queue.allJobs():
-            item_text = f"{job.type}:{job.size} {job.storage}: {str(job)}"
+            item_text = f"{job.type}:{getattr(job, 'size', 'N/A')} {getattr(job, 'storage', 'N/A')}: {str(job)}"
             item = QtWidgets.QListWidgetItem(item_text, self.jobListBox)
             self.jobs[id(item)] = job
         self.refilter()
