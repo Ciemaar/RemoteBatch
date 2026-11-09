@@ -4,7 +4,7 @@ import os.path
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from view.notifier import notify
+from remotebatch.view.notifier import notify
 
 threaded = True
 
@@ -105,13 +105,15 @@ class ManagerMain(QtWidgets.QMainWindow):
 
     def refilter(self):
         """Filter the visible jobs based on selected filter action."""
-        print("running refilter")
-        for job_item in self.jobs:
-            job = self.jobs[job_item]
-            if self.resultsAct.isChecked() and job.type != "results":
-                job_item.setHidden(True)
+        for i in range(self.jobListBox.count()):
+            item = self.jobListBox.item(i)
+            if not item:
+                continue
+            job = self.jobs.get(id(item))
+            if job and self.resultsAct.isChecked() and job.type != "results":
+                self.jobListBox.setRowHidden(i, True)
             else:
-                job_item.setHidden(False)
+                self.jobListBox.setRowHidden(i, False)
 
     def refresh(self):
         """Trigger a refresh of the job list from the queue."""
@@ -127,9 +129,13 @@ class ManagerMain(QtWidgets.QMainWindow):
         self.jobListBox.clear()
         self.jobs = {}
         for job in self.queue.allJobs():
+            if type(job).__name__ == 'Results':
+                continue
+
+                continue
             item_text = f"{job.type}:{job.size} {job.storage}: {str(job)}"
             item = QtWidgets.QListWidgetItem(item_text, self.jobListBox)
-            self.jobs[item] = job
+            self.jobs[id(item)] = job
         self.refilter()
         if self.queue.isConnected:
             self.refreshButton.setText("Refresh")  # type: ignore
@@ -146,7 +152,9 @@ class ManagerMain(QtWidgets.QMainWindow):
         job_item = self.jobListBox.currentItem()
         if job_item is None:
             return
-        job = self.jobs[job_item]
+        job = self.jobs.get(id(job_item))
+        if not job:
+            return
         path = QtWidgets.QFileDialog.getExistingDirectory(
             self, "Retrieve to", "~", QtWidgets.QFileDialog.Option.ShowDirsOnly
         )

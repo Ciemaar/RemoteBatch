@@ -2,7 +2,10 @@
 
 """Module containing the TabDialog and its constituent tabs for Job details."""
 
+import sys
+
 from PyQt6 import QtCore, QtWidgets
+from PyQt6.QtCore import QCommandLineParser
 
 
 class TabDialog(QtWidgets.QDialog):
@@ -180,14 +183,24 @@ class ApplicationsTab(QtWidgets.QWidget):
         self.setLayout(layout)
 
 
-if __name__ == "__main__":
-    import sys
-
-    ARGS_MIN_LENGTH = 2
-
+def main():
+    """Run the tab dialog application."""
     app = QtWidgets.QApplication(sys.argv)
 
-    fileName = sys.argv[1] if len(sys.argv) >= ARGS_MIN_LENGTH else "."
+    parser = QCommandLineParser()
+    parser.setApplicationDescription("Run the tab dialog application.")
+    parser.addHelpOption()
 
-    tabdialog = TabDialog(fileName)
+    parser.addPositionalArgument("filename", "The path to open. Defaults to current directory.", "[filename]")
+
+    parser.process(app)
+
+    positional_args = parser.positionalArguments()
+    filename = positional_args[0] if positional_args else "."
+
+    tabdialog = TabDialog(filename)
     sys.exit(tabdialog.exec())
+
+
+if __name__ == "__main__":
+    main()

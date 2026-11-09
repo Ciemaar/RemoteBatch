@@ -3,13 +3,14 @@
 import contextlib
 import io
 import logging
-import pickle
 import tarfile
 import tempfile
 import uuid
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
+
+import yaml
 
 # Try to import boto3, but allow it to fail if we are just testing local queue
 try:
@@ -579,22 +580,85 @@ class ClientQueue(BatchQueue):
                 print(f"{type(e)} {e} Failed to create/get s3 bucket, running local only.")
         return self.local_jobs + self.remote_jobs
 
+    @staticmethod
+    def serialize_job(job: Job | Results) -> dict[str, object]:
+        """Serialize a job or results object into a dictionary."""
+        if isinstance(job, Results):
+            return {
+                "class": "Results",
+                "id": getattr(job, "id", None),
+                "path": getattr(job, "path", None),
+                "status": getattr(job, "status", None),
+                "size": getattr(job, "size", 0)
+            }
+        elif type(job).__name__ == "ClientJob":
+            return {
+                "class": "ClientJob",
+                "id": getattr(job, "id", None),
+                "type": getattr(job, "type", ""),
+                "size": getattr(job, "size", 0),
+                "status": getattr(job, "status", "pending"),
+                "jobfile": getattr(job, "jobfile", None),
+                "pending_actions": list(getattr(job, "pending_actions", set()))
+            }
+        else:
+            return {
+                "class": "Job",
+                "id": getattr(job, "id", None),
+                "type": getattr(job, "type", ""),
+                "size": getattr(job, "size", 0),
+                "status": getattr(job, "status", "pending"),
+                "jobfile": getattr(job, "jobfile", None)
+            }
+
+    @staticmethod
+    def deserialize_job(data: Any) -> Job | Results | None:
+        """Deserialize a job or results object from a dictionary."""
+        cls_name = data.get("class")
+        if cls_name == "Results":
+            res = Results(str(data.get("id")), str(data.get("path")), data.get("status"))
+            res.size = int(data.get("size", 0))  # type: ignore
+            return res
+        elif cls_name == "ClientJob":
+            job = ClientJob(str(data.get("jobfile")))
+            job.id = str(data.get("id"))
+            job.type = str(data.get("type"))
+            job.size = int(data.get("size", 0))  # type: ignore
+            job.status = str(data.get("status"))
+            job.pending_actions = set(data.get("pending_actions", []))  # type: ignore
+            return job
+        elif cls_name == "Job":
+            job = Job(str(data.get("jobfile")))
+            job.id = str(data.get("id"))
+            job.type = str(data.get("type"))
+            job.size = int(data.get("size", 0))  # type: ignore
+            job.status = str(data.get("status"))
+            return job
+        return None
+
     def save(self) -> None:
-        """Save the local queue state to disk."""
+        """Save the local queue state to disk using YAML."""
         self.local_path.mkdir(parents=True, exist_ok=True)
-        with (self.local_path / "index.pkl").open("wb") as f:
-            pickle.dump({"remote_jobs": self.remote_jobs, "local_jobs": self.local_jobs}, f)
+        state = {
+            "remote_jobs": [ClientQueue.serialize_job(j) for j in self.remote_jobs],
+            "local_jobs": [ClientQueue.serialize_job(j) for j in self.local_jobs]
+        }
+        with (self.local_path / "index.yaml").open("w") as f:
+            yaml.safe_dump(state, f)
 
     def load(self) -> None:
-        """Load the local queue state from disk."""
+        """Load the local queue state from disk using YAML."""
         try:
-            with (self.local_path / "index.pkl").open("rb") as f:
-                state = pickle.load(f)
-        except OSError, EOFError:
-            pass
-        else:
-            self.local_jobs = state.get("local_jobs", [])
-            self.cached_remote_jobs = state.get("remote_jobs", [])
+            with (self.local_path / "index.yaml").open("r") as f:
+                state = yaml.safe_load(f) or {}
+        except (OSError, EOFError, yaml.YAMLError):
+            state = {}
+
+        remote_data = state.get("remote_jobs", [])
+        local_data = state.get("local_jobs", [])
+
+        self.local_jobs = [j for j in (ClientQueue.deserialize_job(d) for d in local_data) if j is not None]
+        self.cached_remote_jobs = [j for j in (ClientQueue.deserialize_job(d) for d in remote_data) if j is not None]
 
     def delete(self, job: Job) -> None:
         """Delete a job, queuing deletion locally if offline.
@@ -655,15 +719,15 @@ class LocalKey:
             else:
                 f.write(Body)  # type: ignore
         if Metadata:
-            with self.meta_path.open("wb") as f:
-                pickle.dump(Metadata, f)
+            with self.meta_path.open("w") as f:
+                yaml.safe_dump(Metadata, f)
         self.load()
 
     def load(self) -> None:
         """Load metadata and calculate content length from disk."""
         if self.meta_path.exists():
-            with self.meta_path.open("rb") as f:
-                self.metadata = pickle.load(f)
+            with self.meta_path.open("r") as f:
+                self.metadata = yaml.safe_load(f)
         if self.data_path.exists():
             self.content_length = self.data_path.stat().st_size
 
