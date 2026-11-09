@@ -175,9 +175,15 @@ def test_client_queue_serialization(local_queue):
     assert queue2.local_jobs[0].id == "cjob1"
     assert type(queue2.local_jobs[0]).__name__ == "ClientJob"
 
-    assert len(queue2.cached_remote_jobs) == 2
+    expected_remote = 2
+    assert len(queue2.cached_remote_jobs) == expected_remote
     assert queue2.cached_remote_jobs[0].id == "res2"
     assert type(queue2.cached_remote_jobs[0]).__name__ == "Results"
 
     assert queue2.cached_remote_jobs[1].id == "job3"
     assert type(queue2.cached_remote_jobs[1]).__name__ == "Job"
+
+    # Ensure we use safe_dump instead of dump to not serialize python-specific tags
+    with open(yaml_file) as f:
+        yaml_content = f.read()
+        assert "!!python/" not in yaml_content
