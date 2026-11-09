@@ -492,7 +492,7 @@ class BatchQueue:
                                     emptyBucket = False
                                     yield job
 
-    def allJobs(self) -> list[Job | Results]:
+    def allJobs(self) -> list[Job]:
         """Retrieve all jobs currently present in the queue.
 
         Returns:
@@ -556,8 +556,8 @@ class ClientQueue(BatchQueue):
             check_network (object, optional): Verify network connectivity. Defaults to always returning True.
         """
         self.openJobs: dict[str, bool] = {}
-        self.local_jobs: list[Job | Results] = []
-        self.cached_remote_jobs: list[Job | Results] = []
+        self.local_jobs: list[Job] = []
+        self.cached_remote_jobs: list[Job] = []
         self.local_path = Path(local_path)
         self.job_class = job_class
         self.bucket: object | None = None
@@ -617,7 +617,7 @@ class ClientQueue(BatchQueue):
         elif isinstance(job, Job):
             self.local_jobs.append(job)
 
-    def allJobs(self) -> list[Job | Results]:
+    def allJobs(self) -> list[Job]:
         """Retrieve a combined list of local and remote jobs.
 
         Returns:
@@ -679,16 +679,24 @@ class ClientQueue(BatchQueue):
         except EOFError:
             pass
         else:
-            self.local_jobs = [
-                j
-                for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("local_jobs", []))
-                if j is not None
-            ]
-            self.cached_remote_jobs = [
-                j
-                for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("remote_jobs", []))
-                if j is not None
-            ]
+            self.local_jobs = typing.cast(
+                list[Job],
+                [
+                    j
+                    for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("local_jobs", []))
+                    if j is not None
+                ],
+            )
+            self.cached_remote_jobs = typing.cast(
+                list[Job],
+                [
+                    j
+                    for j in (
+                        deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("remote_jobs", [])
+                    )
+                    if j is not None
+                ],
+            )
 
     def delete(self, job: Job) -> None:
         """Delete a job, queuing deletion locally if offline.
@@ -845,7 +853,7 @@ class LocalQueue(BatchQueue):
             if key.exists():
                 yield self.job_class(s3key=key)
 
-    def allJobs(self) -> list[Job | Results]:
+    def allJobs(self) -> list[Job]:
         """Retrieve all jobs in the local queue directory.
 
         Returns:

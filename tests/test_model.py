@@ -160,7 +160,7 @@ def test_client_queue_serialization(local_queue):
     j3.type = "povray"
 
     queue.local_jobs = [j1]
-    queue.cached_remote_jobs = [j2, j3]
+    queue.cached_remote_jobs = [j2, j3]  # type: ignore
 
     # Check that saving creates the file and uses safe_dump
     queue.save()
