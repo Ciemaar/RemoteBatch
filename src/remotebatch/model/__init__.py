@@ -680,17 +680,15 @@ class ClientQueue(BatchQueue):
             pass
         else:
             self.local_jobs = [
-                    j
-                    for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("local_jobs", []))
-                    if j is not None
-                ]
+                j
+                for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("local_jobs", []))
+                if j is not None
+            ]
             self.cached_remote_jobs = [
-                    j
-                    for j in (
-                        deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("remote_jobs", [])
-                    )
-                    if j is not None
-                ]
+                j
+                for j in (deserialize_job(typing.cast(dict[str, object], jd)) for jd in state.get("remote_jobs", []))
+                if j is not None
+            ]
 
     def delete(self, job: Job) -> None:
         """Delete a job, queuing deletion locally if offline.
