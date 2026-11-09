@@ -50,7 +50,8 @@ def test_manager_main(qtbot, mocker):
     window.refilter()  # or directly call it if it was loaded
     window._refresh()
 
-    assert window.jobListBox.count() == 2
+    expected_jobs = 2
+    assert window.jobListBox.count() == expected_jobs
 
     # filter by results
     window.resultsAct.setChecked(True)

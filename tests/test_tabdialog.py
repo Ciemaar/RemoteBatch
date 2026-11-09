@@ -2,7 +2,7 @@
 
 from PyQt6 import QtWidgets
 
-from remotebatch.tabdialog import TabDialog
+from remotebatch.tabdialog import TabDialog, main
 
 
 def test_tabdialog(qtbot, mocker):
@@ -12,13 +12,12 @@ def test_tabdialog(qtbot, mocker):
 
     assert dialog.windowTitle() == "Tab Dialog"
     # General, Permissions, Applications
-    assert dialog.findChild(QtWidgets.QTabWidget).count() == 3
+    expected_tabs = 3
+    assert dialog.findChild(QtWidgets.QTabWidget).count() == expected_tabs
 
 
 def test_tabdialog_cli(qtbot, mocker):
     """Test the CLI for tabdialog."""
-    from remotebatch.tabdialog import main
-
     mocker.patch("remotebatch.tabdialog.QtWidgets.QApplication")
     mocker.patch("remotebatch.tabdialog.TabDialog.exec", return_value=0)
     mocker.patch("sys.exit")
