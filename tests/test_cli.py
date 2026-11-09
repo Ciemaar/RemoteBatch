@@ -95,3 +95,17 @@ def test_manager_verbose_flag(mocker):
 
     manager_main()
     mock_log().setLevel.assert_called_with(10)
+
+
+def test_server_verbose_flag(runner, mocker):
+    """Test that the --verbose flag sets the logging level."""
+    mocker.patch("remotebatch.server.BatchQueue")
+    # To prevent endless loop, just throw an exception on poll_and_process
+    mocker.patch("remotebatch.server.poll_and_process", side_effect=KeyboardInterrupt)
+    mocker.patch("remotebatch.server.sleep", side_effect=KeyboardInterrupt)
+
+    mock_log = mocker.patch("remotebatch.server.logging.getLogger")
+
+    _ = runner.invoke(server_main, ["--verbose"])
+    # May exit with a different code or stack trace if interrupted
+    mock_log().setLevel.assert_called_with(10)

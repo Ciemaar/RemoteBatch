@@ -12,8 +12,7 @@ def test_tabdialog(qtbot, mocker):
 
     assert dialog.windowTitle() == "Tab Dialog"
     # General, Permissions, Applications
-    expected_tabs = 3
-    assert dialog.findChild(QtWidgets.QTabWidget).count() == expected_tabs
+    assert dialog.findChild(QtWidgets.QTabWidget).count() == 3
 
 
 def test_tabdialog_cli(qtbot, mocker):

@@ -69,6 +69,7 @@ def main():
     batch_app.start()
 
     try:
+
         resultQueue = BatchQueue(job_class=Results)  # type: ignore
         for result in resultQueue.jobs():
             if result.type != "results":
