@@ -87,7 +87,7 @@ def test_retrieve_job(qtbot, mocker):
     mock_notify = mocker.patch("remotebatch.view.notify")
 
     mocker.patch("remotebatch.view.QtWidgets.QFileDialog.getExistingDirectory", return_value="/tmp/test")
-    mocker.patch("os.listdir", return_value=[])
+    mocker.patch("remotebatch.view.Path.iterdir", return_value=[])
 
     window.retrieve()
     mock_notify.assert_called()  # "Retrieving...", "unzipped to..."
