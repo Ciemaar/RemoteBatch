@@ -4,10 +4,12 @@
 
 ## Setup
 
-To set up the development environment, install the development dependencies:
+To set up the development environment, install the development dependencies using `uv`, which is strictly required for this project:
 
 ```bash
-pip install -e ".[dev]"
+uv venv
+source .venv/bin/activate
+uv pip install -e ".[dev]"
 ```
 
 ## Architecture
@@ -47,16 +49,40 @@ To add a new job type:
 
 ## Testing
 
-Tests are written using `pytest` and `hypothesis` for property-based testing. They use the `LocalQueue` to simulate the S3 queue interactions.
+Tests are written using `pytest` and `hypothesis` for property-based testing. They use the `LocalQueue` to simulate the S3 queue interactions. GUI tests are executed using `pytest-qt`.
+
+To run tests:
 
 ```bash
-pytest
+uv run pytest
 ```
 
-To run tests with detailed output and coverage:
+To run tests with detailed output and coverage, we recommend using `tox`. This project is configured to run tests across multiple Python versions (3.12, 3.13, 3.14).
+
+First, install `tox` globally using `uv`:
 
 ```bash
-pytest --cov=src/remotebatch --cov-report=term-missing
+uv tool install tox
+```
+
+Then, run tests for all supported environments:
+
+```bash
+uv run tox
+```
+
+To run tests for a specific Python version (e.g., Python 3.12):
+
+```bash
+uv run tox -e py312
+```
+
+Note that `tox` is configured to run the test suite and generate a coverage report automatically, verifying that the coverage does not drop below the required threshold.
+
+**Headless Testing**: If you are running tests on a system without a display (like a CI runner), PyQt tests will fail. You must use `xvfb-run` and set `QT_QPA_PLATFORM=offscreen` to simulate a display:
+
+```bash
+QT_QPA_PLATFORM=offscreen xvfb-run uv run tox -e py312
 ```
 
 ## AWS Implementation Notes

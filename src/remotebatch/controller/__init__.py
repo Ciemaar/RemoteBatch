@@ -1,6 +1,10 @@
 """Controller package for the RemoteBatch GUI application."""
 
-from view import AddJobDialog, ManagerMain
+import logging
+
+from remotebatch.view import AddJobDialog, ManagerMain
+
+log = logging.getLogger(__name__)
 
 
 def mgr_main(queue):
@@ -29,5 +33,5 @@ def job_dialog(path, queue):
         int: The execution result of the dialog.
     """
     tabdialog = AddJobDialog(queue)
-    print("created tabdialog")
+    log.debug("created tabdialog")
     return tabdialog.exec()
